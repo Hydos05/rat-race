@@ -19,6 +19,9 @@ everyone who picks the correct winner. Submissions close **20 September 2026**.
    [`supabase/migrations/0001_init.sql`](./supabase/migrations/0001_init.sql) via the SQL editor
    (or `supabase db push` if you use the Supabase CLI). This creates the `users`, `events`,
    `predictions` and `leaderboard` tables, Row Level Security policies, and seeds all 64 events.
+   If your database was created before this migration set existed, also run
+   [`supabase/migrations/0002_remove_other_option.sql`](./supabase/migrations/0002_remove_other_option.sql),
+   which strips any stored `"Other"` option (the prediction form adds its own).
 2. **Copy `.env.example` to `.env.local`** and fill in your Supabase project URL, anon key,
    service role key, and a secret `ADMIN_KEY` of your choosing.
 3. **Disable email confirmation** so new sign-ups can log in immediately (recommended, since
@@ -68,3 +71,5 @@ Visit `/admin` and enter the `ADMIN_KEY` you configured. From there you can:
 - `src/types/database.ts` – shared TypeScript types for events, users, predictions and the
   leaderboard.
 - `supabase/migrations/0001_init.sql` – database schema, RLS policies and seed data.
+- `supabase/migrations/0002_remove_other_option.sql` – removes duplicate `"Other"` options from
+  existing events.

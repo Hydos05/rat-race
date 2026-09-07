@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { SUBMISSION_DEADLINE } from "@/lib/constants";
-import { OTHER_OPTION } from "@/data/events";
+import { OTHER_OPTION, cleanOptions } from "@/lib/eventOptions";
 import CountdownTimer from "@/components/CountdownTimer";
 import type { Prediction, RatRaceEvent } from "@/types/database";
 
@@ -15,6 +15,15 @@ interface PredictionFormProps {
 }
 
 type Answers = Record<string, string>;
+
+/**
+ * Returns the events with their dropdown options cleaned, so a stored
+ * "Other" entry never shows up alongside the "Other" choice the form
+ * always appends.
+ */
+function withCleanOptions(events: RatRaceEvent[]): RatRaceEvent[] {
+  return events.map((event) => ({ ...event, options: cleanOptions(event.options) }));
+}
 
 function buildInitialAnswers(events: RatRaceEvent[], existing: Prediction[]): Answers {
   const byEvent = new Map(existing.map((prediction) => [prediction.event_id, prediction]));
@@ -52,12 +61,13 @@ export default function PredictionForm({
   existingPredictions,
   loadError,
 }: PredictionFormProps) {
+  const cleanedEvents = useMemo(() => withCleanOptions(events), [events]);
   const [deadlinePassed, setDeadlinePassed] = useState(false);
   const [answers, setAnswers] = useState<Answers>(() =>
-    buildInitialAnswers(events, existingPredictions),
+    buildInitialAnswers(cleanedEvents, existingPredictions),
   );
   const [otherText, setOtherText] = useState<Answers>(() =>
-    buildInitialOtherText(events, existingPredictions),
+    buildInitialOtherText(cleanedEvents, existingPredictions),
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,13 +84,13 @@ export default function PredictionForm({
 
   const categories = useMemo(() => {
     const groups = new Map<string, RatRaceEvent[]>();
-    for (const event of events) {
+    for (const event of cleanedEvents) {
       const list = groups.get(event.category) ?? [];
       list.push(event);
       groups.set(event.category, list);
     }
     return Array.from(groups.entries());
-  }, [events]);
+  }, [cleanedEvents]);
 
   function handleSelect(eventId: string, value: string) {
     setAnswers((prev) => ({ ...prev, [eventId]: value }));
@@ -106,7 +116,7 @@ export default function PredictionForm({
     const rows: { user_id: string; event_id: string; selected_option: string }[] = [];
     const deletions: string[] = [];
 
-    for (const event of events) {
+    for (const event of cleanedEvents) {
       if (event.locked) continue;
       const selected = answers[event.id];
 
@@ -176,7 +186,7 @@ export default function PredictionForm({
     );
   }
 
-  if (events.length === 0) {
+  if (cleanedEvents.length === 0) {
     return (
       <p className="text-sm text-gray-400">
         No events are available yet. Please check back soon.
