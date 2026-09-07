@@ -21,6 +21,12 @@ export default function CountdownTimer({ deadline }: { deadline: Date }) {
     return () => clearInterval(interval);
   }, [deadline]);
 
+  const deadlineLabel = deadline.toLocaleDateString("en-AU", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
   if (timeLeft.diff <= 0) {
     return <p className="text-sm font-medium text-red-600">Submissions are now closed.</p>;
   }
@@ -28,7 +34,7 @@ export default function CountdownTimer({ deadline }: { deadline: Date }) {
   return (
     <p className="text-sm font-medium text-gray-700">
       Deadline in {timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m {timeLeft.seconds}s
-      &nbsp;(20 September 2026)
+      &nbsp;({deadlineLabel})
     </p>
   );
 }
