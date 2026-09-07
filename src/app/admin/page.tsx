@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { RatRaceEvent } from "@/types/database";
@@ -104,10 +105,10 @@ export default function AdminPage() {
 
   if (!unlocked) {
     return (
-      <div className="max-w-sm mx-auto bg-white border border-gray-200 rounded-lg p-6 space-y-4">
-        <h1 className="text-xl font-bold text-gray-900">Admin access</h1>
+      <div className="max-w-sm mx-auto bg-gray-900 border border-gray-800 rounded-lg p-6 space-y-4">
+        <h1 className="text-xl font-bold text-gray-100">Admin access</h1>
         <form onSubmit={handleUnlock} className="space-y-3">
-          <label htmlFor="adminKey" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="adminKey" className="block text-sm font-medium text-gray-200">
             Admin key
           </label>
           <input
@@ -115,11 +116,11 @@ export default function AdminPage() {
             type="password"
             value={adminKey}
             onChange={(e) => setAdminKey(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full rounded-md border border-gray-700 bg-gray-800 text-gray-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-400"
           />
           <button
             type="submit"
-            className="w-full bg-indigo-600 text-white py-2 rounded-md font-medium hover:bg-indigo-700"
+            className="w-full bg-cyan-500 text-black py-2 rounded-md font-medium hover:bg-cyan-400"
           >
             Enter
           </button>
@@ -131,39 +132,47 @@ export default function AdminPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-2xl font-bold text-gray-900">Admin panel</h1>
-        <button
-          type="button"
-          onClick={handleRecalculate}
-          className="border border-gray-300 px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-100"
-        >
-          Recalculate leaderboard
-        </button>
+        <h1 className="text-2xl font-bold text-gray-100">Admin panel</h1>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/edit-events"
+            className="border border-gray-700 px-4 py-2 rounded-md text-sm font-medium text-gray-100 hover:bg-gray-800"
+          >
+            Edit event options
+          </Link>
+          <button
+            type="button"
+            onClick={handleRecalculate}
+            className="border border-gray-700 px-4 py-2 rounded-md text-sm font-medium text-gray-100 hover:bg-gray-800"
+          >
+            Recalculate leaderboard
+          </button>
+        </div>
       </div>
 
       {error && (
-        <p role="alert" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3">
+        <p role="alert" className="text-sm text-red-300 bg-red-950/40 border border-red-800 rounded-md p-3">
           {error}
         </p>
       )}
       {message && (
-        <p role="status" className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-md p-3">
+        <p role="status" className="text-sm text-green-300 bg-green-950/40 border border-green-800 rounded-md p-3">
           {message}
         </p>
       )}
 
       {loading ? (
-        <p className="text-sm text-gray-600">Loading events&hellip;</p>
+        <p className="text-sm text-gray-400">Loading events&hellip;</p>
       ) : (
         <div className="space-y-3">
           {events.map((event) => (
             <div
               key={event.id}
-              className="bg-white border border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center gap-3"
+              className="bg-gray-900 border border-gray-800 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center gap-3"
             >
               <div className="flex-1">
-                <p className="font-medium text-gray-900">{event.name}</p>
-                <p className="text-xs text-gray-500">
+                <p className="font-medium text-gray-100">{event.name}</p>
+                <p className="text-xs text-gray-400">
                   {event.category} &middot;{" "}
                   {event.correct_answer
                     ? `Answer: ${event.correct_answer}`
@@ -177,12 +186,12 @@ export default function AdminPage() {
                 onChange={(e) =>
                   setAnswerDrafts((prev) => ({ ...prev, [event.id]: e.target.value }))
                 }
-                className="rounded-md border border-gray-300 px-3 py-2 text-sm sm:w-56"
+                className="rounded-md border border-gray-700 bg-gray-800 text-gray-100 px-3 py-2 text-sm sm:w-56"
               />
               <button
                 type="button"
                 onClick={() => handleSubmitAnswer(event)}
-                className="bg-indigo-600 text-white px-3 py-2 rounded-md text-sm font-medium hover:bg-indigo-700"
+                className="bg-cyan-500 text-black px-3 py-2 rounded-md text-sm font-medium hover:bg-cyan-400"
               >
                 Save answer
               </button>
@@ -191,8 +200,8 @@ export default function AdminPage() {
                 onClick={() => handleToggleLock(event)}
                 className={`px-3 py-2 rounded-md text-sm font-medium ${
                   event.locked
-                    ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                    : "bg-red-50 text-red-700 hover:bg-red-100"
+                    ? "bg-gray-800 text-gray-200 hover:bg-gray-700"
+                    : "bg-red-950/40 text-red-300 hover:bg-red-900/50"
                 }`}
               >
                 {event.locked ? "Unlock" : "Lock"}

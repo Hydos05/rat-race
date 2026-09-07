@@ -5,10 +5,10 @@ export default function HomePage() {
   return (
     <div className="space-y-8">
       <section className="text-center space-y-4">
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900">
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-100">
           Welcome to the Rat Race 🐀
         </h1>
-        <p className="text-gray-600 max-w-2xl mx-auto">
+        <p className="text-gray-300 max-w-2xl mx-auto">
           Predict the winners of {RAT_RACE_EVENTS.length}+ sporting events across AFL, cricket,
           American football, basketball, soccer, rugby, tennis, golf and more. Each event is
           worth 100 points, split equally among everyone who picks the winner. Submissions close{" "}
@@ -17,13 +17,13 @@ export default function HomePage() {
         <div className="flex items-center justify-center gap-3">
           <Link
             href="/signup"
-            className="bg-indigo-600 text-white px-5 py-2.5 rounded-md font-medium hover:bg-indigo-700"
+            className="bg-cyan-500 text-black px-5 py-2.5 rounded-md font-medium hover:bg-cyan-400"
           >
             Sign up to enter
           </Link>
           <Link
             href="/leaderboard"
-            className="border border-gray-300 px-5 py-2.5 rounded-md font-medium hover:bg-gray-100"
+            className="border border-gray-700 px-5 py-2.5 rounded-md font-medium text-gray-100 hover:bg-gray-800"
           >
             View leaderboard
           </Link>
@@ -31,22 +31,22 @@ export default function HomePage() {
       </section>
 
       <section className="grid sm:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <h2 className="font-semibold text-gray-900">1. Sign up</h2>
-          <p className="text-sm text-gray-600 mt-1">
+        <div className="bg-gray-900 rounded-lg border border-gray-800 p-5">
+          <h2 className="font-semibold text-cyan-400">1. Sign up</h2>
+          <p className="text-sm text-gray-300 mt-1">
             Create a free account with your email and password.
           </p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <h2 className="font-semibold text-gray-900">2. Make your picks</h2>
-          <p className="text-sm text-gray-600 mt-1">
+        <div className="bg-gray-900 rounded-lg border border-gray-800 p-5">
+          <h2 className="font-semibold text-cyan-400">2. Make your picks</h2>
+          <p className="text-sm text-gray-300 mt-1">
             Choose a favourite from the dropdown, or add your own answer for every event before
             the deadline.
           </p>
         </div>
-        <div className="bg-white rounded-lg border border-gray-200 p-5">
-          <h2 className="font-semibold text-gray-900">3. Watch the leaderboard</h2>
-          <p className="text-sm text-gray-600 mt-1">
+        <div className="bg-gray-900 rounded-lg border border-gray-800 p-5">
+          <h2 className="font-semibold text-cyan-400">3. Watch the leaderboard</h2>
+          <p className="text-sm text-gray-300 mt-1">
             As results come in, points are split among everyone who picked the winner.
           </p>
         </div>

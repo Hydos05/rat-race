@@ -21,7 +21,13 @@ everyone who picks the correct winner. Submissions close **20 September 2026**.
    `predictions` and `leaderboard` tables, Row Level Security policies, and seeds all 64 events.
 2. **Copy `.env.example` to `.env.local`** and fill in your Supabase project URL, anon key,
    service role key, and a secret `ADMIN_KEY` of your choosing.
-3. **Install dependencies and run the dev server:**
+3. **Disable email confirmation** so new sign-ups can log in immediately (recommended, since
+   confirmation emails are often blocked by mail servers): in the Supabase dashboard go to
+   **Authentication → Providers → Email** and toggle **Confirm email** to **OFF**. The sign-up
+   form already handles both cases (it logs the user in immediately when a session is returned,
+   or shows a "You can now log in" message otherwise), so no code changes are required after
+   toggling this setting.
+4. **Install dependencies and run the dev server:**
 
    ```bash
    npm install
@@ -47,11 +53,15 @@ Visit `/admin` and enter the `ADMIN_KEY` you configured. From there you can:
 - Enter the correct answer for an event, which locks it and automatically recalculates the
   leaderboard (100 points split equally among everyone who predicted correctly).
 - Manually trigger a full leaderboard recalculation.
+- Follow the **Edit event options** link to `/admin/edit-events`, where you can edit each event's
+  dropdown options (one option per line, add/remove/reorder freely), or restore an event's
+  original options with **Reset to defaults**. Changes are saved immediately via
+  `POST /api/admin/update-event-options` and appear the next time the prediction form loads.
 
 ## Project structure
 
 - `src/app` – Next.js App Router pages (`/`, `/signup`, `/login`, `/predict`, `/leaderboard`,
-  `/admin`) and admin API routes (`/api/admin/*`).
+  `/admin`, `/admin/edit-events`) and admin API routes (`/api/admin/*`).
 - `src/data/events.ts` – the master list of events and dropdown options (also used to generate
   the SQL seed data).
 - `src/lib` – Supabase client helpers, points calculation, and leaderboard recalculation logic.

@@ -29,9 +29,9 @@ export default async function LeaderboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Leaderboard</h1>
+      <h1 className="text-2xl font-bold text-gray-100">Leaderboard</h1>
       {error && (
-        <p role="alert" className="text-sm text-red-600">
+        <p role="alert" className="text-sm text-red-400">
           Failed to load leaderboard: {error.message}
         </p>
       )}

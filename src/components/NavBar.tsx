@@ -33,35 +33,35 @@ export default function NavBar() {
   }
 
   return (
-    <header className="bg-white border-b border-gray-200">
+    <header className="bg-gray-950 border-b border-gray-800">
       <nav className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
-        <Link href="/" className="font-bold text-lg tracking-tight text-indigo-700">
+        <Link href="/" className="font-bold text-lg tracking-tight text-cyan-400">
           🐀 Rat Race
         </Link>
-        <div className="flex items-center gap-4 text-sm">
-          <Link href="/predict" className="hover:text-indigo-700">
+        <div className="flex items-center gap-4 text-sm text-gray-100">
+          <Link href="/predict" className="hover:text-cyan-400">
             Predict
           </Link>
-          <Link href="/leaderboard" className="hover:text-indigo-700">
+          <Link href="/leaderboard" className="hover:text-cyan-400">
             Leaderboard
           </Link>
           {!loading && email && (
             <button
               type="button"
               onClick={handleSignOut}
-              className="text-gray-500 hover:text-indigo-700"
+              className="text-gray-400 hover:text-cyan-400"
             >
               Sign out ({email})
             </button>
           )}
           {!loading && !email && (
             <>
-              <Link href="/login" className="hover:text-indigo-700">
+              <Link href="/login" className="hover:text-cyan-400">
                 Log in
               </Link>
               <Link
                 href="/signup"
-                className="bg-indigo-600 text-white px-3 py-1.5 rounded-md hover:bg-indigo-700"
+                className="bg-cyan-500 text-black px-3 py-1.5 rounded-md font-medium hover:bg-cyan-400"
               >
                 Sign up
               </Link>
