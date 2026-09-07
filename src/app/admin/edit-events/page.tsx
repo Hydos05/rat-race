@@ -21,6 +21,8 @@ export default function EditEventsPage() {
   const [drafts, setDrafts] = useState<Record<string, string>>({});
 
   const defaultsByName = useMemo(
+    // Matched by name because `events.name` is unique in the database
+    // (see supabase/migrations/0001_init.sql) and mirrors `RAT_RACE_EVENTS`.
     () => new Map(RAT_RACE_EVENTS.map((event) => [event.name, event.options])),
     [],
   );
@@ -122,7 +124,6 @@ export default function EditEventsPage() {
     ) {
       return;
     }
-    setDrafts((prev) => ({ ...prev, [event.id]: defaults.join("\n") }));
     saveOptions(event.id, defaults);
   }
 
