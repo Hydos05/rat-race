@@ -8,9 +8,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid admin key." }, { status: 401 });
   }
 
-  const { eventId, options } = body as { eventId?: string; options?: unknown };
+  const { eventId, options } = body as { eventId?: unknown; options?: unknown };
 
-  if (!eventId) {
+  if (!eventId || typeof eventId !== "string") {
     return NextResponse.json({ error: "eventId is required." }, { status: 400 });
   }
 

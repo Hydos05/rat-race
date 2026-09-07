@@ -115,6 +115,13 @@ export default function EditEventsPage() {
       setError(`No default options found for "${event.name}".`);
       return;
     }
+    if (
+      !window.confirm(
+        `Reset "${event.name}" to its default options? This will overwrite any unsaved or custom changes.`,
+      )
+    ) {
+      return;
+    }
     setDrafts((prev) => ({ ...prev, [event.id]: defaults.join("\n") }));
     saveOptions(event.id, defaults);
   }
