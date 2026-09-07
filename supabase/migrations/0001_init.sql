@@ -47,7 +47,7 @@ create trigger on_auth_user_created
 create table if not exists public.events (
   id uuid primary key default gen_random_uuid(),
   category text not null,
-  name text not null,
+  name text not null unique,
   description text,
   options jsonb not null default '[]'::jsonb,
   correct_answer text,
@@ -207,4 +207,4 @@ insert into public.events (category, name, description, options, display_order) 
   ('Other', 'Super Netball Champion 2027', 'Winner of the Suncorp Super Netball Grand Final.', '["NSW Swifts","Melbourne Vixens","West Coast Fever","Adelaide Thunderbirds","Sunshine Coast Lightning","Queensland Firebirds","Giants Netball","Collingwood Magpies"]'::jsonb, 62),
   ('Other', 'Tour de France Winner 2027', 'Winner of the Tour de France general classification.', '["Tadej Pogacar","Jonas Vingegaard","Remco Evenepoel","Primoz Roglic","Egan Bernal","Juan Ayuso"]'::jsonb, 63),
   ('Other', 'Netball World Cup Winner 2027', 'Winner of the Netball World Cup.', '["Australia","New Zealand","England","Jamaica","South Africa","Uganda"]'::jsonb, 64)
-on conflict do nothing;
+on conflict (name) do nothing;

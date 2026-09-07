@@ -16,20 +16,36 @@ export async function recalculateLeaderboard() {
 
   if (eventsError) throw eventsError;
 
+  const scoredEvents = events ?? [];
   const totals = new Map<string, number>();
 
-  for (const event of events ?? []) {
+  if (scoredEvents.length > 0) {
     const { data: predictions, error: predictionsError } = await supabase
       .from("predictions")
-      .select("user_id, selected_option")
-      .eq("event_id", event.id);
+      .select("user_id, event_id, selected_option")
+      .in(
+        "event_id",
+        scoredEvents.map((event) => event.id),
+      );
 
     if (predictionsError) throw predictionsError;
 
-    const scored = calculateEventPoints(predictions ?? [], event.correct_answer);
+    const predictionsByEvent = new Map<string, { user_id: string; selected_option: string }[]>();
+    for (const prediction of predictions ?? []) {
+      const list = predictionsByEvent.get(prediction.event_id) ?? [];
+      list.push(prediction);
+      predictionsByEvent.set(prediction.event_id, list);
+    }
 
-    for (const { user_id, points } of scored) {
-      totals.set(user_id, (totals.get(user_id) ?? 0) + points);
+    for (const event of scoredEvents) {
+      const scored = calculateEventPoints(
+        predictionsByEvent.get(event.id) ?? [],
+        event.correct_answer,
+      );
+
+      for (const { user_id, points } of scored) {
+        totals.set(user_id, (totals.get(user_id) ?? 0) + points);
+      }
     }
   }
 
@@ -38,7 +54,7 @@ export async function recalculateLeaderboard() {
 
   const rows = (allUsers ?? []).map((user) => ({
     user_id: user.id,
-    total_points: totals.get(user.id) ?? 0,
+    total_points: Math.round((totals.get(user.id) ?? 0) * 100) / 100,
     updated_at: new Date().toISOString(),
   }));
 

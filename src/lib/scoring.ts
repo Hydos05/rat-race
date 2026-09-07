@@ -26,7 +26,7 @@ export function calculateEventPoints(
 
   if (winners.length === 0) return [];
 
-  const pointsEach = POINTS_PER_EVENT / winners.length;
+  const pointsEach = Math.round((POINTS_PER_EVENT / winners.length) * 100) / 100;
 
   return winners.map((winner) => ({
     user_id: winner.user_id,
