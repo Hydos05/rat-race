@@ -99,6 +99,8 @@ export default function PredictionForm({
   const [savedEventIds, setSavedEventIds] = useState<Set<string>>(
     () => new Set(existingPredictions.map((prediction) => prediction.event_id)),
   );
+  // Track which locks were already saved in the database initially
+  const initialLocksRef = useRef<Locks>(() => buildInitialLocks(existingPredictions));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -330,12 +332,20 @@ export default function PredictionForm({
       const supabase = createClient();
 
       if (rows.length > 0) {
+        // Separate rows into new predictions and updates to existing predictions
+        const newRows = rows.filter((row) => !existingEventIds.has(row.event_id));
+        const existingRows = rows.filter((row) => existingEventIds.has(row.event_id));
+
         // Save unlocked rows first
-        const unlockedRows = rows.filter((row) => !row.is_locked);
-        if (unlockedRows.length > 0) {
+        const unlockedNewRows = newRows.filter((row) => !row.is_locked);
+        const unlockedExistingRows = existingRows.filter((row) => !row.is_locked);
+
+        if (unlockedNewRows.length > 0 || unlockedExistingRows.length > 0) {
           const { error: upsertError } = await supabase
             .from("predictions")
-            .upsert(unlockedRows, { onConflict: "user_id,event_id" });
+            .upsert([...unlockedNewRows, ...unlockedExistingRows], {
+              onConflict: "user_id,event_id",
+            });
 
           if (upsertError) {
             setError(upsertError.message);
@@ -343,17 +353,35 @@ export default function PredictionForm({
           }
         }
 
-        // Save locked rows one at a time to avoid trigger conflicts when multiple
-        // new locks are inserted in the same transaction
-        const lockedRows = rows.filter((row) => row.is_locked);
-        for (const row of lockedRows) {
+        // Save new locked rows one at a time to avoid trigger conflicts
+        const lockedNewRows = newRows.filter((row) => row.is_locked);
+        for (const row of lockedNewRows) {
           const { error: upsertError } = await supabase
             .from("predictions")
             .upsert([row], { onConflict: "user_id,event_id" });
 
           if (upsertError) {
-            // 23514 is the check violation raised by the `predictions_max_locks`
-            // database trigger.
+            setError(
+              upsertError.code === "23514"
+                ? `Maximum ${MAX_LOCKS} locks per competition`
+                : upsertError.message,
+            );
+            return;
+          }
+        }
+
+        // For existing predictions with lock changes, only update if the lock state changed
+        const lockedExistingRows = existingRows.filter((row) => {
+          const wasInitiallyLocked = initialLocksRef.current[row.event_id] ?? false;
+          return row.is_locked !== wasInitiallyLocked; // Only update if changed
+        });
+
+        for (const row of lockedExistingRows) {
+          const { error: upsertError } = await supabase
+            .from("predictions")
+            .upsert([row], { onConflict: "user_id,event_id" });
+
+          if (upsertError) {
             setError(
               upsertError.code === "23514"
                 ? `Maximum ${MAX_LOCKS} locks per competition`
