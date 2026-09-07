@@ -1,30 +1,13 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { RAT_RACE_EVENTS } from "@/data/events";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/supabase/server";
 
-export default function HomePage() {
-  const [email, setEmail] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const supabase = createClient();
-
-    supabase.auth.getUser().then(({ data }) => {
-      setEmail(data.user?.email ?? null);
-      setLoading(false);
-    });
-
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-      setEmail(session?.user?.email ?? null);
-    });
-
-    return () => subscription.subscription.unsubscribe();
-  }, []);
-
-  const isLoggedIn = !loading && !!email;
+export default async function HomePage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isLoggedIn = !!user;
 
   return (
     <div className="space-y-8">
@@ -41,7 +24,7 @@ export default function HomePage() {
           and each event is worth 100 points, split equally among everyone who picks the winner.
           Submissions close <strong>20 September 2026</strong>.
         </p>
-        {!loading && !isLoggedIn && (
+        {!isLoggedIn && (
           <div className="flex items-center justify-center gap-3">
             <Link
               href="/signup"
@@ -80,7 +63,7 @@ export default function HomePage() {
         )}
       </section>
 
-      {!loading && !isLoggedIn && (
+      {!isLoggedIn && (
         <section className="grid sm:grid-cols-3 gap-4">
           <div className="bg-gray-900 rounded-lg border border-gray-800 p-5">
             <h2 className="font-semibold text-cyan-400">1. Sign up</h2>
