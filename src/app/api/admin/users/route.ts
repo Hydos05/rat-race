@@ -1,13 +1,18 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 
 export async function GET() {
   try {
-    const supabase = await createClient();
+    // Use service_role key for admin operations (bypasses RLS)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
 
     // Get current user to verify they're accessing this
+    const supabaseAuth = await import("@/lib/supabase/server").then((m) => m.createClient());
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await supabaseAuth.auth.getUser();
 
     if (!user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -41,20 +46,6 @@ export async function GET() {
 
     // Create event map
     const eventMap = new Map((events || []).map((e) => [e.id, e.name]));
-
-    // Create user map with full names
-    interface UserInfo {
-      fullName: string;
-      email?: string;
-    }
-
-    const userInfoMap = new Map<string, UserInfo>();
-    for (const user of publicUsers || []) {
-      userInfoMap.set(user.id, {
-        fullName: user.full_name || user.email || "Unknown User",
-        email: user.email,
-      });
-    }
 
     // Group predictions by user
     interface UserPredictions {
