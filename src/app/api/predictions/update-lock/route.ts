@@ -46,9 +46,11 @@ export async function POST(request: Request) {
   }
 
   const lockedEvents = locked ?? [];
+  const isAlreadyLocked = lockedEvents.some((row) => row.event_id === eventId);
   const otherLocks = lockedEvents.filter((row) => row.event_id !== eventId).length;
 
-  if (isLocked && otherLocks >= MAX_LOCKS) {
+  // Only reject if trying to ADD a new lock (not replacing an existing one)
+  if (isLocked && !isAlreadyLocked && otherLocks >= MAX_LOCKS) {
     return NextResponse.json(
       {
         error: `Maximum ${MAX_LOCKS} locks per competition`,
