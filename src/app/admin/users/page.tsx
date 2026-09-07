@@ -12,7 +12,8 @@ interface Prediction {
 
 interface UserWithPredictions {
   userId: string;
-  userEmail: string;
+  fullName: string;
+  email?: string;
   predictions: Prediction[];
 }
 
@@ -31,7 +32,8 @@ export default function AdminUsersPage() {
           throw new Error(data.error || "Failed to load users");
         }
 
-        const data = await response.json();
+        const data: UserWithPredictions[] = await response.json();
+        console.log("Users data received:", data);
         setUsers(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load users");
@@ -74,10 +76,8 @@ export default function AdminUsersPage() {
                 className="w-full px-6 py-4 text-left hover:bg-gray-750 transition flex items-center justify-between"
               >
                 <div>
-                  <p className="text-gray-100 font-medium">{user.userEmail || "Unknown User"}</p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    ID: {user.userId.substring(0, 8)}...
-                  </p>
+                  <p className="text-gray-100 font-medium">{user.fullName}</p>
+                  {user.email && <p className="text-xs text-gray-400 mt-1">{user.email}</p>}
                 </div>
                 <div className="flex items-center gap-4">
                   <span className="text-sm text-gray-400">
