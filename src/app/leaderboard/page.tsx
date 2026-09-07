@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import LeaderboardTable from "@/app/leaderboard/LeaderboardTable";
 import type { LeaderboardEntry } from "@/types/database";
 
@@ -10,7 +10,11 @@ interface LeaderboardRow {
 }
 
 export default async function LeaderboardPage() {
-  const supabase = await createClient();
+  // Use service_role key to bypass RLS for the join
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  );
 
   const { data, error } = await supabase
     .from("leaderboard")
