@@ -260,6 +260,8 @@ export default function PredictionForm({
           throw new Error(json.error ?? "Failed to clear locks");
         }
       }
+      // Update initial locks to reflect the cleared state
+      initialLocksRef.current = {};
       setMessage("All locks cleared. Don't forget to save your predictions!");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to clear locks");
@@ -370,10 +372,17 @@ export default function PredictionForm({
           }
         }
 
-        // For existing predictions with lock changes, only update if the lock state changed
+        // For existing predictions with lock changes, only update if BOTH the selection
+        // AND lock state changed. Don't re-save unchanged predictions.
         const lockedExistingRows = existingRows.filter((row) => {
           const wasInitiallyLocked = initialLocksRef.current[row.event_id] ?? false;
-          return row.is_locked !== wasInitiallyLocked; // Only update if changed
+          const initialSelection = existingPredictions.find(
+            (p) => p.event_id === row.event_id,
+          )?.selected_option;
+          // Only update if selection changed OR lock state changed
+          return (
+            row.selected_option !== initialSelection || row.is_locked !== wasInitiallyLocked
+          );
         });
 
         for (const row of lockedExistingRows) {
@@ -412,6 +421,12 @@ export default function PredictionForm({
         ),
       );
       setSavedEventIds(nextSavedEventIds);
+      // Update initial locks to the current state after successful save
+      const nextInitialLocks: Locks = {};
+      for (const row of rows) {
+        if (row.is_locked) nextInitialLocks[row.event_id] = true;
+      }
+      initialLocksRef.current = nextInitialLocks;
       updateLocks((prev) => {
         const next: Locks = {};
         for (const [eventId, isLocked] of Object.entries(prev)) {
