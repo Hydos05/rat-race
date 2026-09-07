@@ -5,7 +5,9 @@ Rat Race competition web app - predict sports event winners and compete on the l
 Participants sign up, predict the winner of 60+ sports events across AFL, Cricket, American
 Football, College Football, Basketball, Baseball, Ice Hockey, Soccer, Rugby League, Rugby Union,
 Tennis, Golf and more, and compete on a live leaderboard. Each event is worth 100 points, split
-equally among everyone who picks the correct winner. Submissions close **20 September 2026**.
+equally among everyone who picks the correct winner. Each player can also nominate up to three
+predictions as **Locks**, which pay double points if they come in. Submissions close
+**20 September 2026**.
 
 ## Tech stack
 
@@ -55,6 +57,7 @@ Visit `/admin` and enter the `ADMIN_KEY` you configured. From there you can:
 - Enter the correct answer for an event, which locks it and automatically recalculates the
   leaderboard (100 points split equally among everyone who predicted correctly).
 - Manually trigger a full leaderboard recalculation.
+- Use **View predictions** to review every player's picks, including which ones they locked.
 - Follow the **Edit event options** link to `/admin/edit-events`, where you can edit each event's
   dropdown options (one option per line, add/remove/reorder freely), or restore an event's
   original options with **Reset to defaults**. Changes are saved immediately via
@@ -63,7 +66,8 @@ Visit `/admin` and enter the `ADMIN_KEY` you configured. From there you can:
 ## Project structure
 
 - `src/app` – Next.js App Router pages (`/`, `/signup`, `/login`, `/predict`, `/leaderboard`,
-  `/admin`, `/admin/edit-events`) and admin API routes (`/api/admin/*`).
+  `/admin`, `/admin/edit-events`), admin API routes (`/api/admin/*`) and the player
+  `POST /api/predictions/update-lock` route used by the Lock toggles.
 - `src/data/events.ts` – the master list of events and dropdown options (also used to generate
   the SQL seed data).
 - `src/lib` – Supabase client helpers, points calculation, and leaderboard recalculation logic.
@@ -74,3 +78,5 @@ Visit `/admin` and enter the `ADMIN_KEY` you configured. From there you can:
   existing events.
 - `supabase/migrations/0003_replace_2027_events.sql` – replaces five events with Heisman Trophy,
   Serie A Champion and La Liga Champion.
+- `supabase/migrations/0004_prediction_locks.sql` – adds `predictions.is_locked` and the trigger
+  enforcing a maximum of three Locks per user.

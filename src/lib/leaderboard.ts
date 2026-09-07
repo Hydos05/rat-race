@@ -22,7 +22,7 @@ export async function recalculateLeaderboard() {
   if (scoredEvents.length > 0) {
     const { data: predictions, error: predictionsError } = await supabase
       .from("predictions")
-      .select("user_id, event_id, selected_option")
+      .select("user_id, event_id, selected_option, is_locked")
       .in(
         "event_id",
         scoredEvents.map((event) => event.id),
@@ -30,7 +30,10 @@ export async function recalculateLeaderboard() {
 
     if (predictionsError) throw predictionsError;
 
-    const predictionsByEvent = new Map<string, { user_id: string; selected_option: string }[]>();
+    const predictionsByEvent = new Map<
+      string,
+      { user_id: string; selected_option: string; is_locked: boolean }[]
+    >();
     for (const prediction of predictions ?? []) {
       const list = predictionsByEvent.get(prediction.event_id) ?? [];
       list.push(prediction);

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { SUBMISSION_DEADLINE } from "@/lib/constants";
+import { MAX_LOCKS, SUBMISSION_DEADLINE } from "@/lib/constants";
 import { OTHER_OPTION, cleanOptions } from "@/lib/eventOptions";
 import CountdownTimer from "@/components/CountdownTimer";
 import type { Prediction, RatRaceEvent } from "@/types/database";
@@ -15,6 +15,7 @@ interface PredictionFormProps {
 }
 
 type Answers = Record<string, string>;
+type Locks = Record<string, boolean>;
 
 /**
  * Returns the events with their dropdown options cleaned, so a stored
@@ -55,6 +56,14 @@ function buildInitialOtherText(events: RatRaceEvent[], existing: Prediction[]): 
   return otherText;
 }
 
+function buildInitialLocks(existing: Prediction[]): Locks {
+  const locks: Locks = {};
+  for (const prediction of existing) {
+    if (prediction.is_locked) locks[prediction.event_id] = true;
+  }
+  return locks;
+}
+
 export default function PredictionForm({
   userId,
   events,
@@ -68,6 +77,10 @@ export default function PredictionForm({
   );
   const [otherText, setOtherText] = useState<Answers>(() =>
     buildInitialOtherText(cleanedEvents, existingPredictions),
+  );
+  const [locks, setLocks] = useState<Locks>(() => buildInitialLocks(existingPredictions));
+  const [savedEventIds, setSavedEventIds] = useState<Set<string>>(
+    () => new Set(existingPredictions.map((prediction) => prediction.event_id)),
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -92,12 +105,63 @@ export default function PredictionForm({
     return Array.from(groups.entries());
   }, [cleanedEvents]);
 
+  const lockCount = useMemo(
+    () => Object.values(locks).filter(Boolean).length,
+    [locks],
+  );
+
   function handleSelect(eventId: string, value: string) {
     setAnswers((prev) => ({ ...prev, [eventId]: value }));
+    // Clearing a pick also releases its lock so it can be used elsewhere.
+    if (value === "") {
+      setLocks((prev) => {
+        if (!prev[eventId]) return prev;
+        const next = { ...prev };
+        delete next[eventId];
+        return next;
+      });
+    }
   }
 
   function handleOtherText(eventId: string, value: string) {
     setOtherText((prev) => ({ ...prev, [eventId]: value }));
+  }
+
+  /**
+   * Toggles a Lock. Predictions that are already saved are updated through
+   * the API straight away (so the server can re-check the limit); locks on
+   * unsaved predictions are stored locally and persisted on submit.
+   */
+  async function handleToggleLock(eventId: string) {
+    setError(null);
+    setMessage(null);
+
+    const nextLocked = !locks[eventId];
+
+    if (nextLocked && lockCount >= MAX_LOCKS) {
+      setError(`Maximum ${MAX_LOCKS} locks per competition`);
+      return;
+    }
+
+    if (savedEventIds.has(eventId)) {
+      try {
+        const response = await fetch("/api/predictions/update-lock", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ eventId, isLocked: nextLocked }),
+        });
+        const json = await response.json();
+        if (!response.ok) {
+          setError(json.error ?? "Could not update this lock.");
+          return;
+        }
+      } catch {
+        setError("Something went wrong while updating this lock. Please try again.");
+        return;
+      }
+    }
+
+    setLocks((prev) => ({ ...prev, [eventId]: nextLocked }));
   }
 
   async function handleSubmit() {
@@ -113,7 +177,17 @@ export default function PredictionForm({
       existingPredictions.map((prediction) => prediction.event_id),
     );
 
-    const rows: { user_id: string; event_id: string; selected_option: string }[] = [];
+    if (lockCount > MAX_LOCKS) {
+      setError(`Maximum ${MAX_LOCKS} locks per competition`);
+      return;
+    }
+
+    const rows: {
+      user_id: string;
+      event_id: string;
+      selected_option: string;
+      is_locked: boolean;
+    }[] = [];
     const deletions: string[] = [];
 
     for (const event of cleanedEvents) {
@@ -134,7 +208,12 @@ export default function PredictionForm({
         return;
       }
 
-      rows.push({ user_id: userId, event_id: event.id, selected_option: finalAnswer });
+      rows.push({
+        user_id: userId,
+        event_id: event.id,
+        selected_option: finalAnswer,
+        is_locked: locks[event.id] ?? false,
+      });
     }
 
     if (rows.length === 0 && deletions.length === 0) {
@@ -170,6 +249,14 @@ export default function PredictionForm({
         }
       }
 
+      setSavedEventIds(new Set(rows.map((row) => row.event_id)));
+      setLocks((prev) => {
+        const next: Locks = {};
+        for (const row of rows) {
+          if (prev[row.event_id]) next[row.event_id] = true;
+        }
+        return next;
+      });
       setMessage("Your predictions have been saved!");
     } catch {
       setError("Something went wrong while saving. Please try again.");
@@ -201,6 +288,19 @@ export default function PredictionForm({
         <CountdownTimer deadline={SUBMISSION_DEADLINE} />
       </div>
 
+      <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-1">
+        <p className="text-sm font-medium text-gray-100">
+          <span aria-hidden="true">&#9889;</span> Locks used:{" "}
+          <span className="text-yellow-300">
+            {lockCount} / {MAX_LOCKS}
+          </span>
+        </p>
+        <p className="text-xs text-gray-400">
+          Lock up to {MAX_LOCKS} events to double the points you win on them. Locks can
+          be changed any time before the deadline.
+        </p>
+      </div>
+
       {error && (
         <p role="alert" className="text-sm text-red-300 bg-red-950/40 border border-red-800 rounded-md p-3">
           {error}
@@ -222,9 +322,17 @@ export default function PredictionForm({
               {categoryEvents.map((event) => (
                 <div
                   key={event.id}
-                  className="bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-2"
+                  className={`bg-gray-900 border rounded-lg p-4 space-y-2 ${
+                    locks[event.id] ? "border-yellow-400/70" : "border-gray-800"
+                  }`}
                 >
                   <label htmlFor={`event-${event.id}`} className="block font-medium text-gray-100">
+                    {locks[event.id] && (
+                      <span className="mr-1 text-yellow-300" title="Locked: double points">
+                        <span aria-hidden="true">&#9889;</span>
+                        <span className="sr-only">Locked for double points:</span>
+                      </span>
+                    )}
                     {event.name}
                     {event.locked && (
                       <span className="ml-2 text-xs font-normal text-red-400">(locked)</span>
@@ -248,6 +356,25 @@ export default function PredictionForm({
                     ))}
                     <option value={OTHER_OPTION}>Other</option>
                   </select>
+                  <label
+                    htmlFor={`lock-${event.id}`}
+                    className="flex items-center gap-2 text-xs text-gray-300"
+                    title={`Locked events pay double points. You can lock up to ${MAX_LOCKS} events.`}
+                  >
+                    <input
+                      id={`lock-${event.id}`}
+                      type="checkbox"
+                      checked={locks[event.id] ?? false}
+                      disabled={
+                        event.locked ||
+                        deadlinePassed ||
+                        (!locks[event.id] && lockCount >= MAX_LOCKS)
+                      }
+                      onChange={() => handleToggleLock(event.id)}
+                      className="h-4 w-4 accent-yellow-400 disabled:opacity-50"
+                    />
+                    Lock this event (2x points)
+                  </label>
                   {answers[event.id] === OTHER_OPTION && (
                     <input
                       type="text"

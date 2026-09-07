@@ -12,3 +12,14 @@
 export const SUBMISSION_DEADLINE = new Date("2026-09-20T23:59:59+10:00");
 
 export const POINTS_PER_EVENT = 100;
+
+/**
+ * Maximum number of predictions a user may nominate as a "Lock" (a
+ * double-point pick). Also enforced in the database by the
+ * `predictions_max_locks` trigger in
+ * `supabase/migrations/0004_prediction_locks.sql`.
+ */
+export const MAX_LOCKS = 3;
+
+/** Multiplier applied to a correct prediction that the user locked. */
+export const LOCK_MULTIPLIER = 2;

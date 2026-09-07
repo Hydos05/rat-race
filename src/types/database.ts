@@ -39,6 +39,8 @@ export interface Prediction {
   user_id: string;
   event_id: string;
   selected_option: string;
+  /** Whether this prediction is one of the user's double-point "Locks". */
+  is_locked: boolean;
   submitted_at: string;
   updated_at: string;
 }
