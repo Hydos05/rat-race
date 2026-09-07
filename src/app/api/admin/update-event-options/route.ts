@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient, isValidAdminKey } from "@/lib/supabase/admin";
+import { cleanOptions } from "@/lib/eventOptions";
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -18,9 +19,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "options must be an array of strings." }, { status: 400 });
   }
 
-  const cleanedOptions = options
-    .map((option) => option.trim())
-    .filter((option, index, all) => option.length > 0 && all.indexOf(option) === index);
+  const cleanedOptions = cleanOptions(options);
 
   if (cleanedOptions.length === 0) {
     return NextResponse.json(
@@ -30,14 +29,20 @@ export async function POST(request: Request) {
   }
 
   const supabase = createAdminClient();
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("events")
     .update({ options: cleanedOptions })
-    .eq("id", eventId);
+    .eq("id", eventId)
+    .select("id");
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  if (!data || data.length === 0) {
+    return NextResponse.json({ error: "Event not found." }, { status: 404 });
+  }
+
   return NextResponse.json({ success: true });
 }
+

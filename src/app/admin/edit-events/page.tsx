@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { RAT_RACE_EVENTS } from "@/data/events";
+import { cleanOptions } from "@/lib/eventOptions";
 import type { RatRaceEvent } from "@/types/database";
 
 async function fetchEvents() {
@@ -68,10 +69,7 @@ export default function EditEventsPage() {
   }
 
   function parseOptions(text: string) {
-    return text
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line, index, all) => line.length > 0 && all.indexOf(line) === index);
+    return cleanOptions(text.split("\n"));
   }
 
   async function saveOptions(eventId: string, options: string[], notice?: string) {
