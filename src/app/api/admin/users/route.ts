@@ -20,7 +20,10 @@ export async function GET() {
       .from("users")
       .select("id, full_name, email");
 
-    if (usersError) throw usersError;
+    if (usersError) {
+      console.error("Error fetching users:", usersError);
+      throw usersError;
+    }
 
     // Fetch all predictions
     const { data: predictions, error: predictionsError } = await supabase
@@ -48,7 +51,7 @@ export async function GET() {
     const userInfoMap = new Map<string, UserInfo>();
     for (const user of publicUsers || []) {
       userInfoMap.set(user.id, {
-        fullName: user.full_name || "Unknown",
+        fullName: user.full_name || user.email || "Unknown User",
         email: user.email,
       });
     }
@@ -71,7 +74,7 @@ export async function GET() {
     // Initialize all users (including those without predictions)
     for (const user of publicUsers || []) {
       userMap.set(user.id, {
-        fullName: user.full_name || "Unknown",
+        fullName: user.full_name || user.email || "Unknown User",
         email: user.email,
         predictions: [],
       });
