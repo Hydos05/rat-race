@@ -41,7 +41,7 @@ export default function EditEventsPage() {
           const next = { ...prev };
           for (const event of loaded) {
             if (next[event.id] === undefined) {
-              next[event.id] = event.options.join("\n");
+              next[event.id] = cleanOptions(event.options).join("\n");
             }
           }
           return next;

@@ -682,4 +682,4 @@ export const EVENT_CATEGORIES: string[] = Array.from(
   new Set(RAT_RACE_EVENTS.map((event) => event.category)),
 );
 
-export const OTHER_OPTION = "Other";
+export { OTHER_OPTION } from "@/lib/eventOptions";
