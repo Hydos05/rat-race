@@ -226,6 +226,48 @@ export default function PredictionForm({
     );
   }
 
+  async function handleClearAllLocks() {
+    setError(null);
+    setMessage(null);
+
+    // Clear all locks locally
+    updateLocks(() => ({}));
+
+    // Remove locks from saved predictions via API
+    const lockedEventIds = Array.from(Object.entries(locks))
+      .filter(([_, isLocked]) => isLocked)
+      .map(([eventId, _]) => eventId)
+      .filter((eventId) => savedEventIds.has(eventId));
+
+    if (lockedEventIds.length === 0) {
+      setMessage("All locks cleared.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      for (const eventId of lockedEventIds) {
+        const response = await fetch("/api/predictions/update-lock", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ eventId, isLocked: false }),
+        });
+
+        if (!response.ok) {
+          const json = await response.json();
+          throw new Error(json.error ?? "Failed to clear locks");
+        }
+      }
+      setMessage("All locks cleared. Don't forget to save your predictions!");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to clear locks");
+      // Restore locks on failure
+      updateLocks(() => buildInitialLocks(existingPredictions));
+    } finally {
+      setSaving(false);
+    }
+  }
+
   async function handleSubmit() {
     setError(null);
     setMessage(null);
@@ -373,12 +415,24 @@ export default function PredictionForm({
       </div>
 
       <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-1">
-        <p className="text-sm font-medium text-gray-100">
-          <span aria-hidden="true">&#9889;</span> Locks used:{" "}
-          <span className="text-yellow-300">
-            {lockCount} / {MAX_LOCKS}
-          </span>
-        </p>
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-gray-100">
+            <span aria-hidden="true">&#9889;</span> Locks used:{" "}
+            <span className="text-yellow-300">
+              {lockCount} / {MAX_LOCKS}
+            </span>
+          </p>
+          {lockCount > 0 && (
+            <button
+              type="button"
+              onClick={handleClearAllLocks}
+              disabled={saving}
+              className="text-xs px-3 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded border border-gray-700 disabled:opacity-50"
+            >
+              Clear all locks
+            </button>
+          )}
+        </div>
         <p className="text-xs text-gray-400">
           Lock up to {MAX_LOCKS} events to earn {LOCK_MULTIPLIER}x the points you win on
           them. Locks can be changed any time before the deadline.
