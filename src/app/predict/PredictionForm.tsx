@@ -19,7 +19,7 @@ type Locks = Record<string, boolean>;
 
 /**
  * Ignore repeated clicks on the same lock within this window, so a quick
- * unlock/relock can't fire overlapping requests.
+ * unlock/relike can't fire overlapping requests.
  */
 const LOCK_TOGGLE_DEBOUNCE_MS = 150;
 
@@ -99,8 +99,6 @@ export default function PredictionForm({
   const [savedEventIds, setSavedEventIds] = useState<Set<string>>(
     () => new Set(existingPredictions.map((prediction) => prediction.event_id)),
   );
-  // Track which locks were already saved in the database initially
-  const initialLocksRef = useRef<Locks>(buildInitialLocks(existingPredictions));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -153,12 +151,9 @@ export default function PredictionForm({
   /**
    * Toggles a Lock. The change is applied to the local state straight away so
    * unlocking frees its slot immediately and the event can be relocked without
-   * being counted as an extra lock. Predictions that are already saved are also
-   * updated through the API (so the server can re-check the limit); the local
-   * change is rolled back if that call fails. Locks on unsaved predictions are
-   * persisted on submit.
+   * being counted as an extra lock.
    */
-  async function handleToggleLock(eventId: string) {
+  function handleToggleLock(eventId: string) {
     // Debounce rapid clicks on the same lock to avoid overlapping requests.
     const now = Date.now();
     if (now - (lastToggleAtRef.current[eventId] ?? 0) < LOCK_TOGGLE_DEBOUNCE_MS) return;
@@ -188,38 +183,6 @@ export default function PredictionForm({
       return next;
     });
 
-    if (savedEventIds.has(eventId)) {
-      let failure: string | null = null;
-      try {
-        const response = await fetch("/api/predictions/update-lock", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ eventId, isLocked: nextLocked }),
-        });
-        const json = await response.json();
-        if (!response.ok) {
-          failure = json.error ?? "Could not update this lock.";
-        }
-      } catch {
-        failure = "Something went wrong while updating this lock. Please try again.";
-      }
-
-      if (failure) {
-        // Roll back just this event's lock, leaving any other changes alone.
-        updateLocks((prev) => {
-          const next = { ...prev };
-          if (wasLocked) {
-            next[eventId] = true;
-          } else {
-            delete next[eventId];
-          }
-          return next;
-        });
-        setError(failure);
-        return;
-      }
-    }
-
     const eventName = cleanedEvents.find((event) => event.id === eventId)?.name ?? "this event";
     setMessage(
       nextLocked
@@ -234,42 +197,7 @@ export default function PredictionForm({
 
     // Clear all locks locally
     updateLocks(() => ({}));
-
-    // Remove locks from saved predictions via API
-    const lockedEventIds = Array.from(Object.entries(locks))
-      .filter(([_, isLocked]) => isLocked)
-      .map(([eventId, _]) => eventId)
-      .filter((eventId) => savedEventIds.has(eventId));
-
-    if (lockedEventIds.length === 0) {
-      setMessage("All locks cleared.");
-      return;
-    }
-
-    setSaving(true);
-    try {
-      for (const eventId of lockedEventIds) {
-        const response = await fetch("/api/predictions/update-lock", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ eventId, isLocked: false }),
-        });
-
-        if (!response.ok) {
-          const json = await response.json();
-          throw new Error(json.error ?? "Failed to clear locks");
-        }
-      }
-      // Update initial locks to reflect the cleared state
-      initialLocksRef.current = {};
-      setMessage("All locks cleared. Don't forget to save your predictions!");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to clear locks");
-      // Restore locks on failure
-      updateLocks(() => buildInitialLocks(existingPredictions));
-    } finally {
-      setSaving(false);
-    }
+    setMessage("All locks cleared.");
   }
 
   async function handleSubmit() {
@@ -280,10 +208,6 @@ export default function PredictionForm({
       setError("The submission deadline has passed.");
       return;
     }
-
-    const existingEventIds = new Set(
-      existingPredictions.map((prediction) => prediction.event_id),
-    );
 
     if (countLocks(locksRef.current) > MAX_LOCKS) {
       setError(`Maximum ${MAX_LOCKS} locks per competition`);
@@ -303,7 +227,7 @@ export default function PredictionForm({
       const selected = answers[event.id];
 
       if (!selected) {
-        if (existingEventIds.has(event.id)) {
+        if (savedEventIds.has(event.id)) {
           deletions.push(event.id);
         }
         continue;
@@ -335,8 +259,8 @@ export default function PredictionForm({
 
       if (rows.length > 0) {
         // Separate rows into new predictions and updates to existing predictions
-        const newRows = rows.filter((row) => !existingEventIds.has(row.event_id));
-        const existingRows = rows.filter((row) => existingEventIds.has(row.event_id));
+        const newRows = rows.filter((row) => !savedEventIds.has(row.event_id));
+        const existingRows = rows.filter((row) => savedEventIds.has(row.event_id));
 
         // Save unlocked rows first
         const unlockedNewRows = newRows.filter((row) => !row.is_locked);
@@ -355,9 +279,14 @@ export default function PredictionForm({
           }
         }
 
-        // Save new locked rows one at a time to avoid trigger conflicts
-        const lockedNewRows = newRows.filter((row) => row.is_locked);
-        for (const row of lockedNewRows) {
+        // Save all locked rows one at a time (both new and existing)
+        // This overwrites any previous lock state
+        const allLockedRows = [
+          ...newRows.filter((row) => row.is_locked),
+          ...existingRows.filter((row) => row.is_locked),
+        ];
+        
+        for (const row of allLockedRows) {
           const { error: upsertError } = await supabase
             .from("predictions")
             .upsert([row], { onConflict: "user_id,event_id" });
@@ -372,31 +301,34 @@ export default function PredictionForm({
           }
         }
 
-        // For existing predictions with lock changes, only update if BOTH the selection
-        // AND lock state changed. Don't re-save unchanged predictions.
-        const lockedExistingRows = existingRows.filter((row) => {
-          const wasInitiallyLocked = initialLocksRef.current[row.event_id] ?? false;
-          const initialSelection = existingPredictions.find(
-            (p) => p.event_id === row.event_id,
-          )?.selected_option;
-          // Only update if selection changed OR lock state changed
-          return (
-            row.selected_option !== initialSelection || row.is_locked !== wasInitiallyLocked
+        // For existing predictions that are NOT locked, clear their lock if they had one
+        const unlockedExistingEventIds = new Set(
+          existingRows.filter((row) => !row.is_locked).map((row) => row.event_id),
+        );
+        
+        for (const eventId of unlockedExistingEventIds) {
+          const existingPrediction = existingPredictions.find(
+            (p) => p.event_id === eventId,
           );
-        });
+          if (existingPrediction?.is_locked) {
+            const { error: upsertError } = await supabase
+              .from("predictions")
+              .upsert(
+                [
+                  {
+                    user_id: userId,
+                    event_id: eventId,
+                    selected_option: existingPrediction.selected_option,
+                    is_locked: false,
+                  },
+                ],
+                { onConflict: "user_id,event_id" },
+              );
 
-        for (const row of lockedExistingRows) {
-          const { error: upsertError } = await supabase
-            .from("predictions")
-            .upsert([row], { onConflict: "user_id,event_id" });
-
-          if (upsertError) {
-            setError(
-              upsertError.code === "23514"
-                ? `Maximum ${MAX_LOCKS} locks per competition`
-                : upsertError.message,
-            );
-            return;
+            if (upsertError) {
+              setError(upsertError.message);
+              return;
+            }
           }
         }
       }
@@ -421,19 +353,6 @@ export default function PredictionForm({
         ),
       );
       setSavedEventIds(nextSavedEventIds);
-      // Update initial locks to the current state after successful save
-      const nextInitialLocks: Locks = {};
-      for (const row of rows) {
-        if (row.is_locked) nextInitialLocks[row.event_id] = true;
-      }
-      initialLocksRef.current = nextInitialLocks;
-      updateLocks((prev) => {
-        const next: Locks = {};
-        for (const [eventId, isLocked] of Object.entries(prev)) {
-          if (isLocked && !deletedEventIds.has(eventId)) next[eventId] = true;
-        }
-        return next;
-      });
       setMessage("Your predictions have been saved!");
     } catch {
       setError("Something went wrong while saving. Please try again.");
