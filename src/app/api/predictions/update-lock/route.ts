@@ -45,11 +45,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: locksError.message }, { status: 500 });
   }
 
-  const otherLocks = (locked ?? []).filter((row) => row.event_id !== eventId).length;
+  const lockedEvents = locked ?? [];
+  const otherLocks = lockedEvents.filter((row) => row.event_id !== eventId).length;
 
   if (isLocked && otherLocks >= MAX_LOCKS) {
     return NextResponse.json(
-      { error: `Maximum ${MAX_LOCKS} locks per competition`, lockCount: otherLocks },
+      {
+        error: `Maximum ${MAX_LOCKS} locks per competition`,
+        lockCount: lockedEvents.length,
+      },
       { status: 400 },
     );
   }

@@ -255,11 +255,17 @@ export default function PredictionForm({
         }
       }
 
-      setSavedEventIds(new Set(rows.map((row) => row.event_id)));
+      const deletedEventIds = new Set(deletions);
+      const nextSavedEventIds = new Set(
+        [...savedEventIds, ...rows.map((row) => row.event_id)].filter(
+          (eventId) => !deletedEventIds.has(eventId),
+        ),
+      );
+      setSavedEventIds(nextSavedEventIds);
       setLocks((prev) => {
         const next: Locks = {};
-        for (const row of rows) {
-          if (prev[row.event_id]) next[row.event_id] = true;
+        for (const [eventId, isLocked] of Object.entries(prev)) {
+          if (isLocked && !deletedEventIds.has(eventId)) next[eventId] = true;
         }
         return next;
       });

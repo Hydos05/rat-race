@@ -15,6 +15,10 @@ declare
   lock_count integer;
 begin
   if new.is_locked then
+    -- Serialise concurrent lock changes for this user so two transactions
+    -- can't both see a below-limit count and exceed `max_locks`.
+    perform pg_advisory_xact_lock(hashtextextended(new.user_id::text, 0));
+
     select count(*) into lock_count
     from public.predictions
     where user_id = new.user_id
