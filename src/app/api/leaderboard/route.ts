@@ -1,5 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 
+interface LeaderboardRow {
+  user_id: string;
+  total_points: number;
+  updated_at: string;
+  users: { full_name: string | null; email: string } | null;
+}
+
 export async function GET() {
   try {
     // Use service_role key to bypass RLS
@@ -15,14 +22,7 @@ export async function GET() {
 
     if (error) throw error;
 
-    const rows = (
-      data as {
-        user_id: string;
-        total_points: number;
-        updated_at: string;
-        users: { full_name: string | null; email: string } | null;
-      }[]
-    ) ?? [];
+    const rows = (data as unknown as LeaderboardRow[]) ?? [];
 
     return Response.json(
       rows.map((row) => ({
