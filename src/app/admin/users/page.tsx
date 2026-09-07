@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface Prediction {
   id: string;
@@ -18,32 +19,73 @@ interface UserWithPredictions {
 }
 
 export default function AdminUsersPage() {
+  const router = useRouter();
+  const [adminKey, setAdminKey] = useState("");
+  const [unlocked, setUnlocked] = useState(false);
   const [users, setUsers] = useState<UserWithPredictions[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
 
+  function handleUnlock(event: React.FormEvent) {
+    event.preventDefault();
+    if (!adminKey.trim()) return;
+    setLoading(true);
+    setUnlocked(true);
+  }
+
   useEffect(() => {
+    if (!unlocked) return;
+
     async function fetchData() {
       try {
-        const response = await fetch("/api/admin/users");
+        const response = await fetch("/api/admin/users", {
+          headers: { "X-Admin-Key": adminKey },
+        });
+
         if (!response.ok) {
           const data = await response.json();
           throw new Error(data.error || "Failed to load users");
         }
 
         const data: UserWithPredictions[] = await response.json();
-        console.log("Users data received:", data);
         setUsers(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load users");
+        setUnlocked(false);
       } finally {
         setLoading(false);
       }
     }
 
     fetchData();
-  }, []);
+  }, [unlocked, adminKey]);
+
+  if (!unlocked) {
+    return (
+      <div className="max-w-sm mx-auto bg-gray-900 border border-gray-800 rounded-lg p-6 space-y-4">
+        <h1 className="text-xl font-bold text-gray-100">Admin access</h1>
+        <form onSubmit={handleUnlock} className="space-y-3">
+          <label htmlFor="adminKey" className="block text-sm font-medium text-gray-200">
+            Admin key
+          </label>
+          <input
+            id="adminKey"
+            type="password"
+            value={adminKey}
+            onChange={(e) => setAdminKey(e.target.value)}
+            className="w-full rounded-md border border-gray-700 bg-gray-800 text-gray-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-400"
+          />
+          <button
+            type="submit"
+            className="w-full bg-cyan-500 text-black py-2 rounded-md font-medium hover:bg-cyan-400"
+          >
+            Enter
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
