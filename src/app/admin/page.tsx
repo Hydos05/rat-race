@@ -3,7 +3,20 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { LOCK_MULTIPLIER } from "@/lib/constants";
 import type { RatRaceEvent } from "@/types/database";
+
+interface AdminUserPredictions {
+  userId: string;
+  name: string;
+  lockCount: number;
+  predictions: {
+    eventId: string;
+    eventName: string;
+    selectedOption: string;
+    isLocked: boolean;
+  }[];
+}
 
 async function fetchEvents() {
   const supabase = createClient();
@@ -18,6 +31,9 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [answerDrafts, setAnswerDrafts] = useState<Record<string, string>>({});
+  const [userPredictions, setUserPredictions] = useState<AdminUserPredictions[] | null>(
+    null,
+  );
 
   async function loadEvents(ignoreRef?: { current: boolean }) {
     const { data, error: fetchError } = await fetchEvents();
@@ -96,6 +112,26 @@ export default function AdminPage() {
     }
   }
 
+  async function handleViewPredictions() {
+    setError(null);
+    setMessage(null);
+    try {
+      const response = await fetch("/api/admin/predictions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminKey }),
+      });
+      const json = await response.json();
+      if (!response.ok) {
+        setError(json.error ?? "Request failed.");
+        return;
+      }
+      setUserPredictions(json.users as AdminUserPredictions[]);
+    } catch {
+      setError("Could not load predictions. Please try again.");
+    }
+  }
+
   async function handleRecalculate() {
     const success = await callAdminApi("recalculate", {});
     if (success) {
@@ -142,6 +178,13 @@ export default function AdminPage() {
           </Link>
           <button
             type="button"
+            onClick={handleViewPredictions}
+            className="border border-gray-700 px-4 py-2 rounded-md text-sm font-medium text-gray-100 hover:bg-gray-800"
+          >
+            View predictions
+          </button>
+          <button
+            type="button"
             onClick={handleRecalculate}
             className="border border-gray-700 px-4 py-2 rounded-md text-sm font-medium text-gray-100 hover:bg-gray-800"
           >
@@ -159,6 +202,50 @@ export default function AdminPage() {
         <p role="status" className="text-sm text-green-300 bg-green-950/40 border border-green-800 rounded-md p-3">
           {message}
         </p>
+      )}
+
+      {userPredictions && (
+        <div className="space-y-3">
+          <h2 className="text-lg font-semibold text-gray-100">Predictions by user</h2>
+          {userPredictions.length === 0 ? (
+            <p className="text-sm text-gray-400">No predictions have been made yet.</p>
+          ) : (
+            userPredictions.map((entry) => (
+              <div
+                key={entry.userId}
+                className="bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-2"
+              >
+                <p className="font-medium text-gray-100">
+                  {entry.name}{" "}
+                  <span className="text-xs font-normal text-yellow-300">
+                    <span aria-hidden="true">&#9889;</span> {entry.lockCount} lock
+                    {entry.lockCount === 1 ? "" : "s"}
+                  </span>
+                </p>
+                <ul className="text-sm text-gray-300 space-y-1">
+                  {entry.predictions.map((prediction) => (
+                    <li
+                      key={prediction.eventId}
+                      className={prediction.isLocked ? "text-yellow-300" : undefined}
+                    >
+                      {prediction.isLocked && (
+                        <span aria-hidden="true" className="mr-1">
+                          &#9889;
+                        </span>
+                      )}
+                      {prediction.eventName}: {prediction.selectedOption}
+                      {prediction.isLocked && (
+                        <span className="ml-1 text-xs">
+                          (locked &mdash; {LOCK_MULTIPLIER}x points)
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))
+          )}
+        </div>
       )}
 
       {loading ? (
