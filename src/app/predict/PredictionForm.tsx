@@ -170,7 +170,7 @@ export default function PredictionForm({
 
   if (loadError) {
     return (
-      <p role="alert" className="text-sm text-red-600">
+      <p role="alert" className="text-sm text-red-400">
         Failed to load events: {loadError}
       </p>
     );
@@ -178,7 +178,7 @@ export default function PredictionForm({
 
   if (events.length === 0) {
     return (
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-gray-400">
         No events are available yet. Please check back soon.
       </p>
     );
@@ -186,18 +186,18 @@ export default function PredictionForm({
 
   return (
     <div className="space-y-6">
-      <div className="bg-white border border-gray-200 rounded-lg p-4 flex items-center justify-between flex-wrap gap-2">
-        <h1 className="text-2xl font-bold text-gray-900">Make your predictions</h1>
+      <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 flex items-center justify-between flex-wrap gap-2">
+        <h1 className="text-2xl font-bold text-gray-100">Make your predictions</h1>
         <CountdownTimer deadline={SUBMISSION_DEADLINE} />
       </div>
 
       {error && (
-        <p role="alert" className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-3">
+        <p role="alert" className="text-sm text-red-300 bg-red-950/40 border border-red-800 rounded-md p-3">
           {error}
         </p>
       )}
       {message && (
-        <p role="status" className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-md p-3">
+        <p role="status" className="text-sm text-green-300 bg-green-950/40 border border-green-800 rounded-md p-3">
           {message}
         </p>
       )}
@@ -205,30 +205,30 @@ export default function PredictionForm({
       <div className="space-y-8">
         {categories.map(([category, categoryEvents]) => (
           <section key={category} className="space-y-3">
-            <h2 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-1">
+            <h2 className="text-lg font-semibold text-cyan-400 border-b border-gray-800 pb-1">
               {category}
             </h2>
             <div className="grid gap-4 sm:grid-cols-2">
               {categoryEvents.map((event) => (
                 <div
                   key={event.id}
-                  className="bg-white border border-gray-200 rounded-lg p-4 space-y-2"
+                  className="bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-2"
                 >
-                  <label htmlFor={`event-${event.id}`} className="block font-medium text-gray-900">
+                  <label htmlFor={`event-${event.id}`} className="block font-medium text-gray-100">
                     {event.name}
                     {event.locked && (
-                      <span className="ml-2 text-xs font-normal text-red-600">(locked)</span>
+                      <span className="ml-2 text-xs font-normal text-red-400">(locked)</span>
                     )}
                   </label>
                   {event.description && (
-                    <p className="text-xs text-gray-500">{event.description}</p>
+                    <p className="text-xs text-gray-400">{event.description}</p>
                   )}
                   <select
                     id={`event-${event.id}`}
                     value={answers[event.id] ?? ""}
                     disabled={event.locked || deadlinePassed}
                     onChange={(e) => handleSelect(event.id, e.target.value)}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 disabled:bg-gray-100 disabled:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full rounded-md border border-gray-700 bg-gray-800 text-gray-100 px-3 py-2 disabled:bg-gray-900 disabled:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-400"
                   >
                     <option value="">Select an option&hellip;</option>
                     {event.options.map((option) => (
@@ -245,7 +245,7 @@ export default function PredictionForm({
                       value={otherText[event.id] ?? ""}
                       disabled={event.locked || deadlinePassed}
                       onChange={(e) => handleOtherText(event.id, e.target.value)}
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 disabled:bg-gray-100 disabled:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full rounded-md border border-gray-700 bg-gray-800 text-gray-100 px-3 py-2 disabled:bg-gray-900 disabled:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-400"
                     />
                   )}
                 </div>
@@ -260,7 +260,7 @@ export default function PredictionForm({
           type="button"
           onClick={handleSubmit}
           disabled={saving || deadlinePassed}
-          className="bg-indigo-600 text-white px-6 py-3 rounded-md font-medium shadow-lg hover:bg-indigo-700 disabled:opacity-60"
+          className="bg-cyan-500 text-black px-6 py-3 rounded-md font-medium shadow-lg hover:bg-cyan-400 disabled:opacity-60"
         >
           {saving ? "Saving..." : "Save predictions"}
         </button>

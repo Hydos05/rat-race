@@ -28,11 +28,11 @@ export default function CountdownTimer({ deadline }: { deadline: Date }) {
   });
 
   if (timeLeft.diff <= 0) {
-    return <p className="text-sm font-medium text-red-600">Submissions are now closed.</p>;
+    return <p className="text-sm font-medium text-red-400">Submissions are now closed.</p>;
   }
 
   return (
-    <p className="text-sm font-medium text-gray-700">
+    <p className="text-sm font-medium text-gray-300">
       Deadline in {timeLeft.days}d {timeLeft.hours}h {timeLeft.minutes}m {timeLeft.seconds}s
       &nbsp;({deadlineLabel})
     </p>

@@ -61,11 +61,11 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="max-w-md mx-auto bg-white border border-gray-200 rounded-lg p-6 space-y-5">
-      <h1 className="text-2xl font-bold text-gray-900">Sign up</h1>
+    <div className="max-w-md mx-auto bg-gray-900 border border-gray-800 rounded-lg p-6 space-y-5">
+      <h1 className="text-2xl font-bold text-gray-100">Sign up</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="fullName" className="block text-sm font-medium text-gray-200">
             Full name
           </label>
           <input
@@ -74,11 +74,11 @@ export default function SignUpPage() {
             required
             value={fullName}
             onChange={(event) => setFullName(event.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="mt-1 w-full rounded-md border border-gray-700 bg-gray-800 text-gray-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-400"
           />
         </div>
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="email" className="block text-sm font-medium text-gray-200">
             Email
           </label>
           <input
@@ -87,11 +87,11 @@ export default function SignUpPage() {
             required
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="mt-1 w-full rounded-md border border-gray-700 bg-gray-800 text-gray-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-400"
           />
         </div>
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="password" className="block text-sm font-medium text-gray-200">
             Password
           </label>
           <input
@@ -101,11 +101,11 @@ export default function SignUpPage() {
             minLength={6}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="mt-1 w-full rounded-md border border-gray-700 bg-gray-800 text-gray-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-400"
           />
         </div>
         <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-200">
             Confirm password
           </label>
           <input
@@ -115,17 +115,17 @@ export default function SignUpPage() {
             minLength={6}
             value={confirmPassword}
             onChange={(event) => setConfirmPassword(event.target.value)}
-            className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="mt-1 w-full rounded-md border border-gray-700 bg-gray-800 text-gray-100 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-cyan-400"
           />
         </div>
 
         {error && (
-          <p role="alert" className="text-sm text-red-600">
+          <p role="alert" className="text-sm text-red-400">
             {error}
           </p>
         )}
         {message && (
-          <p role="status" className="text-sm text-green-600">
+          <p role="status" className="text-sm text-green-400">
             {message}
           </p>
         )}
@@ -133,14 +133,14 @@ export default function SignUpPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-indigo-600 text-white py-2.5 rounded-md font-medium hover:bg-indigo-700 disabled:opacity-60"
+          className="w-full bg-cyan-500 text-black py-2.5 rounded-md font-medium hover:bg-cyan-400 disabled:opacity-60"
         >
           {loading ? "Creating account..." : "Sign up"}
         </button>
       </form>
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-gray-400">
         Already have an account?{" "}
-        <Link href="/login" className="text-indigo-600 hover:underline">
+        <Link href="/login" className="text-cyan-400 hover:underline">
           Log in
         </Link>
       </p>
