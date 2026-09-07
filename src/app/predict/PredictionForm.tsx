@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { LOCK_MULTIPLIER, MAX_LOCKS, SUBMISSION_DEADLINE } from "@/lib/constants";
 import { OTHER_OPTION, cleanOptions } from "@/lib/eventOptions";
@@ -16,6 +16,19 @@ interface PredictionFormProps {
 
 type Answers = Record<string, string>;
 type Locks = Record<string, boolean>;
+
+/**
+ * Ignore repeated clicks on the same lock within this window, so a quick
+ * unlock/relock can't fire overlapping requests.
+ */
+const LOCK_TOGGLE_DEBOUNCE_MS = 150;
+
+/** Number of events currently locked, counted from the live form state. */
+function countLocks(locks: Locks, exceptEventId?: string): number {
+  return Object.entries(locks).filter(
+    ([eventId, isLocked]) => isLocked && eventId !== exceptEventId,
+  ).length;
+}
 
 /**
  * Returns the events with their dropdown options cleaned, so a stored
@@ -79,6 +92,10 @@ export default function PredictionForm({
     buildInitialOtherText(cleanedEvents, existingPredictions),
   );
   const [locks, setLocks] = useState<Locks>(() => buildInitialLocks(existingPredictions));
+  // Mirrors `locks` so handlers can read the up-to-date lock state without
+  // waiting for a re-render (a stale count made relocking look like a 4th lock).
+  const locksRef = useRef<Locks>(locks);
+  const lastToggleAtRef = useRef<Record<string, number>>({});
   const [savedEventIds, setSavedEventIds] = useState<Set<string>>(
     () => new Set(existingPredictions.map((prediction) => prediction.event_id)),
   );
@@ -105,16 +122,20 @@ export default function PredictionForm({
     return Array.from(groups.entries());
   }, [cleanedEvents]);
 
-  const lockCount = useMemo(
-    () => Object.values(locks).filter(Boolean).length,
-    [locks],
-  );
+  const lockCount = useMemo(() => countLocks(locks), [locks]);
+
+  /** Updates the lock state and keeps `locksRef` in sync with it. */
+  const updateLocks = useCallback((updater: (prev: Locks) => Locks) => {
+    const next = updater(locksRef.current);
+    locksRef.current = next;
+    setLocks(next);
+  }, []);
 
   function handleSelect(eventId: string, value: string) {
     setAnswers((prev) => ({ ...prev, [eventId]: value }));
     // Clearing a pick also releases its lock so it can be used elsewhere.
     if (value === "") {
-      setLocks((prev) => {
+      updateLocks((prev) => {
         if (!prev[eventId]) return prev;
         const next = { ...prev };
         delete next[eventId];
@@ -128,22 +149,45 @@ export default function PredictionForm({
   }
 
   /**
-   * Toggles a Lock. Predictions that are already saved are updated through
-   * the API straight away (so the server can re-check the limit); locks on
-   * unsaved predictions are stored locally and persisted on submit.
+   * Toggles a Lock. The change is applied to the local state straight away so
+   * unlocking frees its slot immediately and the event can be relocked without
+   * being counted as an extra lock. Predictions that are already saved are also
+   * updated through the API (so the server can re-check the limit); the local
+   * change is rolled back if that call fails. Locks on unsaved predictions are
+   * persisted on submit.
    */
   async function handleToggleLock(eventId: string) {
-    setError(null);
-    setMessage(null);
+    // Debounce rapid clicks on the same lock to avoid overlapping requests.
+    const now = Date.now();
+    if (now - (lastToggleAtRef.current[eventId] ?? 0) < LOCK_TOGGLE_DEBOUNCE_MS) return;
+    lastToggleAtRef.current[eventId] = now;
 
-    const nextLocked = !locks[eventId];
+    const wasLocked = locksRef.current[eventId] ?? false;
+    const nextLocked = !wasLocked;
 
-    if (nextLocked && lockCount >= MAX_LOCKS) {
+    // Count the other locked events live, so replacing or relocking an event
+    // is never mistaken for adding a 4th lock.
+    if (nextLocked && countLocks(locksRef.current, eventId) >= MAX_LOCKS) {
+      setMessage(null);
       setError(`Maximum ${MAX_LOCKS} locks per competition`);
       return;
     }
 
+    setError(null);
+    setMessage(null);
+
+    updateLocks((prev) => {
+      const next = { ...prev };
+      if (nextLocked) {
+        next[eventId] = true;
+      } else {
+        delete next[eventId];
+      }
+      return next;
+    });
+
     if (savedEventIds.has(eventId)) {
+      let failure: string | null = null;
       try {
         const response = await fetch("/api/predictions/update-lock", {
           method: "POST",
@@ -152,16 +196,34 @@ export default function PredictionForm({
         });
         const json = await response.json();
         if (!response.ok) {
-          setError(json.error ?? "Could not update this lock.");
-          return;
+          failure = json.error ?? "Could not update this lock.";
         }
       } catch {
-        setError("Something went wrong while updating this lock. Please try again.");
+        failure = "Something went wrong while updating this lock. Please try again.";
+      }
+
+      if (failure) {
+        // Roll back just this event's lock, leaving any other changes alone.
+        updateLocks((prev) => {
+          const next = { ...prev };
+          if (wasLocked) {
+            next[eventId] = true;
+          } else {
+            delete next[eventId];
+          }
+          return next;
+        });
+        setError(failure);
         return;
       }
     }
 
-    setLocks((prev) => ({ ...prev, [eventId]: nextLocked }));
+    const eventName = cleanedEvents.find((event) => event.id === eventId)?.name ?? "this event";
+    setMessage(
+      nextLocked
+        ? `Locked "${eventName}" for ${LOCK_MULTIPLIER}x points.`
+        : `Unlocked "${eventName}".`,
+    );
   }
 
   async function handleSubmit() {
@@ -177,7 +239,7 @@ export default function PredictionForm({
       existingPredictions.map((prediction) => prediction.event_id),
     );
 
-    if (lockCount > MAX_LOCKS) {
+    if (countLocks(locksRef.current) > MAX_LOCKS) {
       setError(`Maximum ${MAX_LOCKS} locks per competition`);
       return;
     }
@@ -226,19 +288,29 @@ export default function PredictionForm({
       const supabase = createClient();
 
       if (rows.length > 0) {
-        const { error: upsertError } = await supabase
-          .from("predictions")
-          .upsert(rows, { onConflict: "user_id,event_id" });
+        // Save the unlocked rows first: releasing locks before adding new ones
+        // stops the `predictions_max_locks` trigger from seeing a lock that is
+        // about to be removed and rejecting the batch.
+        const batches = [
+          rows.filter((row) => !row.is_locked),
+          rows.filter((row) => row.is_locked),
+        ].filter((batch) => batch.length > 0);
 
-        if (upsertError) {
-          // 23514 is the check violation raised by the `predictions_max_locks`
-          // database trigger.
-          setError(
-            upsertError.code === "23514"
-              ? `Maximum ${MAX_LOCKS} locks per competition`
-              : upsertError.message,
-          );
-          return;
+        for (const batch of batches) {
+          const { error: upsertError } = await supabase
+            .from("predictions")
+            .upsert(batch, { onConflict: "user_id,event_id" });
+
+          if (upsertError) {
+            // 23514 is the check violation raised by the `predictions_max_locks`
+            // database trigger.
+            setError(
+              upsertError.code === "23514"
+                ? `Maximum ${MAX_LOCKS} locks per competition`
+                : upsertError.message,
+            );
+            return;
+          }
         }
       }
 
@@ -262,7 +334,7 @@ export default function PredictionForm({
         ),
       );
       setSavedEventIds(nextSavedEventIds);
-      setLocks((prev) => {
+      updateLocks((prev) => {
         const next: Locks = {};
         for (const [eventId, isLocked] of Object.entries(prev)) {
           if (isLocked && !deletedEventIds.has(eventId)) next[eventId] = true;
