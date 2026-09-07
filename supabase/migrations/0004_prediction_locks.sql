@@ -10,6 +10,8 @@ returns trigger
 language plpgsql
 as $$
 declare
+  -- Keep in sync with `MAX_LOCKS` in src/lib/constants.ts.
+  max_locks constant integer := 3;
   lock_count integer;
 begin
   if new.is_locked then
@@ -19,8 +21,8 @@ begin
       and is_locked = true
       and id <> new.id;
 
-    if lock_count >= 3 then
-      raise exception 'Maximum 3 locks per competition'
+    if lock_count >= max_locks then
+      raise exception 'Maximum % locks per competition', max_locks
         using errcode = 'check_violation';
     end if;
   end if;

@@ -115,17 +115,21 @@ export default function AdminPage() {
   async function handleViewPredictions() {
     setError(null);
     setMessage(null);
-    const response = await fetch("/api/admin/predictions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ adminKey }),
-    });
-    const json = await response.json();
-    if (!response.ok) {
-      setError(json.error ?? "Request failed.");
-      return;
+    try {
+      const response = await fetch("/api/admin/predictions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ adminKey }),
+      });
+      const json = await response.json();
+      if (!response.ok) {
+        setError(json.error ?? "Request failed.");
+        return;
+      }
+      setUserPredictions(json.users as AdminUserPredictions[]);
+    } catch {
+      setError("Could not load predictions. Please try again.");
     }
-    setUserPredictions(json.users as AdminUserPredictions[]);
   }
 
   async function handleRecalculate() {

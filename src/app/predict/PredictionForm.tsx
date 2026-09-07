@@ -231,7 +231,13 @@ export default function PredictionForm({
           .upsert(rows, { onConflict: "user_id,event_id" });
 
         if (upsertError) {
-          setError(upsertError.message);
+          // 23514 is the check violation raised by the `predictions_max_locks`
+          // database trigger.
+          setError(
+            upsertError.code === "23514"
+              ? `Maximum ${MAX_LOCKS} locks per competition`
+              : upsertError.message,
+          );
           return;
         }
       }
