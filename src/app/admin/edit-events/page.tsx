@@ -30,21 +30,22 @@ export default function EditEventsPage() {
   async function loadEvents(ignoreRef?: { current: boolean }) {
     const { data, error: fetchError } = await fetchEvents();
 
-    if (ignoreRef?.current) return;
-    if (fetchError) {
-      setError(fetchError.message);
-    } else {
-      const loaded = (data as RatRaceEvent[]) ?? [];
-      setEvents(loaded);
-      setDrafts((prev) => {
-        const next = { ...prev };
-        for (const event of loaded) {
-          if (next[event.id] === undefined) {
-            next[event.id] = event.options.join("\n");
+    if (!ignoreRef?.current) {
+      if (fetchError) {
+        setError(fetchError.message);
+      } else {
+        const loaded = (data as RatRaceEvent[]) ?? [];
+        setEvents(loaded);
+        setDrafts((prev) => {
+          const next = { ...prev };
+          for (const event of loaded) {
+            if (next[event.id] === undefined) {
+              next[event.id] = event.options.join("\n");
+            }
           }
-        }
-        return next;
-      });
+          return next;
+        });
+      }
     }
     setLoading(false);
   }
@@ -73,7 +74,7 @@ export default function EditEventsPage() {
       .filter((line, index, all) => line.length > 0 && all.indexOf(line) === index);
   }
 
-  async function saveOptions(eventId: string, options: string[]) {
+  async function saveOptions(eventId: string, options: string[], notice?: string) {
     setError(null);
     setMessage(null);
 
@@ -94,7 +95,7 @@ export default function EditEventsPage() {
         setError(json.error ?? "Request failed.");
         return;
       }
-      setMessage("Options saved.");
+      setMessage(notice ? `Options saved. ${notice}` : "Options saved.");
       setEvents((prev) =>
         prev.map((event) => (event.id === eventId ? { ...event, options } : event)),
       );
@@ -107,8 +108,14 @@ export default function EditEventsPage() {
   }
 
   function handleSave(event: RatRaceEvent) {
+    const rawLines = (drafts[event.id] ?? "").split("\n");
     const options = parseOptions(drafts[event.id] ?? "");
-    saveOptions(event.id, options);
+    const removedCount = rawLines.length - options.length;
+    const notice =
+      removedCount > 0
+        ? `Removed ${removedCount} blank or duplicate line${removedCount === 1 ? "" : "s"}.`
+        : undefined;
+    saveOptions(event.id, options, notice);
   }
 
   function handleReset(event: RatRaceEvent) {
