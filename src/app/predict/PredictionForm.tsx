@@ -64,10 +64,10 @@ export default function PredictionForm({
   const cleanedEvents = useMemo(() => withCleanOptions(events), [events]);
   const [deadlinePassed, setDeadlinePassed] = useState(false);
   const [answers, setAnswers] = useState<Answers>(() =>
-    buildInitialAnswers(withCleanOptions(events), existingPredictions),
+    buildInitialAnswers(cleanedEvents, existingPredictions),
   );
   const [otherText, setOtherText] = useState<Answers>(() =>
-    buildInitialOtherText(withCleanOptions(events), existingPredictions),
+    buildInitialOtherText(cleanedEvents, existingPredictions),
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
