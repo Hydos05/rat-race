@@ -330,18 +330,26 @@ export default function PredictionForm({
       const supabase = createClient();
 
       if (rows.length > 0) {
-        // Save the unlocked rows first: releasing locks before adding new ones
-        // stops the `predictions_max_locks` trigger from seeing a lock that is
-        // about to be removed and rejecting the batch.
-        const batches = [
-          rows.filter((row) => !row.is_locked),
-          rows.filter((row) => row.is_locked),
-        ].filter((batch) => batch.length > 0);
-
-        for (const batch of batches) {
+        // Save unlocked rows first
+        const unlockedRows = rows.filter((row) => !row.is_locked);
+        if (unlockedRows.length > 0) {
           const { error: upsertError } = await supabase
             .from("predictions")
-            .upsert(batch, { onConflict: "user_id,event_id" });
+            .upsert(unlockedRows, { onConflict: "user_id,event_id" });
+
+          if (upsertError) {
+            setError(upsertError.message);
+            return;
+          }
+        }
+
+        // Save locked rows one at a time to avoid trigger conflicts when multiple
+        // new locks are inserted in the same transaction
+        const lockedRows = rows.filter((row) => row.is_locked);
+        for (const row of lockedRows) {
+          const { error: upsertError } = await supabase
+            .from("predictions")
+            .upsert([row], { onConflict: "user_id,event_id" });
 
           if (upsertError) {
             // 23514 is the check violation raised by the `predictions_max_locks`
