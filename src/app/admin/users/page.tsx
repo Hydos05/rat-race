@@ -1,13 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import type { Prediction, RatRaceEvent } from "@/types/database";
+
+interface Prediction {
+  id: string;
+  event_id: string;
+  selected_option: string;
+  is_locked: boolean;
+  eventName?: string;
+}
 
 interface UserWithPredictions {
   userId: string;
   userEmail: string;
-  predictions: (Prediction & { eventName?: string })[];
+  predictions: Prediction[];
 }
 
 export default function AdminUsersPage() {
@@ -19,58 +25,14 @@ export default function AdminUsersPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const supabase = createClient();
-
-        // Fetch all predictions with user info
-        const { data: predictions, error: predictionsError } = await supabase
-          .from("predictions")
-          .select("*");
-
-        if (predictionsError) throw predictionsError;
-
-        // Fetch all events for name mapping
-        const { data: events, error: eventsError } = await supabase
-          .from("events")
-          .select("id, name");
-
-        if (eventsError) throw eventsError;
-
-        // Fetch all users
-        const { data: authUsers, error: usersError } = await supabase.auth.admin.listUsers();
-
-        if (usersError) throw usersError;
-
-        // Create a map of event IDs to names
-        const eventMap = new Map((events || []).map((e) => [e.id, e.name]));
-
-        // Group predictions by user
-        const userMap = new Map<string, UserWithPredictions>();
-
-        for (const user of authUsers.users) {
-          userMap.set(user.id, {
-            userId: user.id,
-            userEmail: user.email || "Unknown",
-            predictions: [],
-          });
+        const response = await fetch("/api/admin/users");
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.error || "Failed to load users");
         }
 
-        // Assign predictions to users and add event names
-        for (const prediction of predictions || []) {
-          const userData = userMap.get(prediction.user_id);
-          if (userData) {
-            userData.predictions.push({
-              ...prediction,
-              eventName: eventMap.get(prediction.event_id),
-            });
-          }
-        }
-
-        // Sort users by email and convert to array
-        const userArray = Array.from(userMap.values()).sort((a, b) =>
-          a.userEmail.localeCompare(b.userEmail),
-        );
-
-        setUsers(userArray);
+        const data = await response.json();
+        setUsers(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load users");
       } finally {
@@ -112,7 +74,7 @@ export default function AdminUsersPage() {
                 className="w-full px-6 py-4 text-left hover:bg-gray-750 transition flex items-center justify-between"
               >
                 <div>
-                  <p className="text-gray-100 font-medium">{user.userEmail}</p>
+                  <p className="text-gray-100 font-medium">{user.userEmail || "Unknown User"}</p>
                   <p className="text-xs text-gray-400 mt-1">
                     ID: {user.userId.substring(0, 8)}...
                   </p>
