@@ -36,16 +36,28 @@ export async function POST(request: Request) {
   const byUser = new Map<
     string,
     {
+      userId: string;
       name: string;
       lockCount: number;
-      predictions: { eventName: string; selectedOption: string; isLocked: boolean }[];
+      predictions: {
+        eventId: string;
+        eventName: string;
+        selectedOption: string;
+        isLocked: boolean;
+      }[];
     }
   >();
 
   for (const row of rows) {
     const name = row.users?.full_name || row.users?.email || "Anonymous";
-    const entry = byUser.get(row.user_id) ?? { name, lockCount: 0, predictions: [] };
+    const entry = byUser.get(row.user_id) ?? {
+      userId: row.user_id,
+      name,
+      lockCount: 0,
+      predictions: [],
+    };
     entry.predictions.push({
+      eventId: row.event_id,
       eventName: row.events?.name ?? "Unknown event",
       selectedOption: row.selected_option,
       isLocked: row.is_locked,

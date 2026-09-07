@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { MAX_LOCKS, SUBMISSION_DEADLINE } from "@/lib/constants";
+import { LOCK_MULTIPLIER, MAX_LOCKS, SUBMISSION_DEADLINE } from "@/lib/constants";
 import { OTHER_OPTION, cleanOptions } from "@/lib/eventOptions";
 import CountdownTimer from "@/components/CountdownTimer";
 import type { Prediction, RatRaceEvent } from "@/types/database";
@@ -296,8 +296,8 @@ export default function PredictionForm({
           </span>
         </p>
         <p className="text-xs text-gray-400">
-          Lock up to {MAX_LOCKS} events to double the points you win on them. Locks can
-          be changed any time before the deadline.
+          Lock up to {MAX_LOCKS} events to earn {LOCK_MULTIPLIER}x the points you win on
+          them. Locks can be changed any time before the deadline.
         </p>
       </div>
 
@@ -359,7 +359,7 @@ export default function PredictionForm({
                   <label
                     htmlFor={`lock-${event.id}`}
                     className="flex items-center gap-2 text-xs text-gray-300"
-                    title={`Locked events pay double points. You can lock up to ${MAX_LOCKS} events.`}
+                    title={`Locked events pay ${LOCK_MULTIPLIER}x points. You can lock up to ${MAX_LOCKS} events.`}
                   >
                     <input
                       id={`lock-${event.id}`}
@@ -373,7 +373,7 @@ export default function PredictionForm({
                       onChange={() => handleToggleLock(event.id)}
                       className="h-4 w-4 accent-yellow-400 disabled:opacity-50"
                     />
-                    Lock this event (2x points)
+                    Lock this event ({LOCK_MULTIPLIER}x points)
                   </label>
                   {answers[event.id] === OTHER_OPTION && (
                     <input

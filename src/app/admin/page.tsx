@@ -3,12 +3,19 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { LOCK_MULTIPLIER } from "@/lib/constants";
 import type { RatRaceEvent } from "@/types/database";
 
 interface AdminUserPredictions {
+  userId: string;
   name: string;
   lockCount: number;
-  predictions: { eventName: string; selectedOption: string; isLocked: boolean }[];
+  predictions: {
+    eventId: string;
+    eventName: string;
+    selectedOption: string;
+    isLocked: boolean;
+  }[];
 }
 
 async function fetchEvents() {
@@ -201,7 +208,7 @@ export default function AdminPage() {
           ) : (
             userPredictions.map((entry) => (
               <div
-                key={entry.name}
+                key={entry.userId}
                 className="bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-2"
               >
                 <p className="font-medium text-gray-100">
@@ -214,7 +221,7 @@ export default function AdminPage() {
                 <ul className="text-sm text-gray-300 space-y-1">
                   {entry.predictions.map((prediction) => (
                     <li
-                      key={prediction.eventName}
+                      key={prediction.eventId}
                       className={prediction.isLocked ? "text-yellow-300" : undefined}
                     >
                       {prediction.isLocked && (
@@ -224,7 +231,9 @@ export default function AdminPage() {
                       )}
                       {prediction.eventName}: {prediction.selectedOption}
                       {prediction.isLocked && (
-                        <span className="ml-1 text-xs">(locked &mdash; 2x points)</span>
+                        <span className="ml-1 text-xs">
+                          (locked &mdash; {LOCK_MULTIPLIER}x points)
+                        </span>
                       )}
                     </li>
                   ))}

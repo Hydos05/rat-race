@@ -62,7 +62,14 @@ export async function POST(request: Request) {
     .select("event_id");
 
   if (updateError) {
-    return NextResponse.json({ error: updateError.message }, { status: 400 });
+    // The `predictions_max_locks` trigger is the authoritative guard against
+    // concurrent requests slipping past the count check above; surface its
+    // check violation as the same friendly message.
+    const message =
+      updateError.code === "23514" || updateError.message.includes("Maximum")
+        ? `Maximum ${MAX_LOCKS} locks per competition`
+        : updateError.message;
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 
   if (!updated || updated.length === 0) {
