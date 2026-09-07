@@ -4,6 +4,24 @@ export async function GET() {
   try {
     const supabase = await createClient();
 
+    // Get current user to verify they're accessing this
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+      });
+    }
+
+    // Fetch all users from public.users table with their full names
+    const { data: publicUsers, error: usersError } = await supabase
+      .from("users")
+      .select("id, full_name, email");
+
+    if (usersError) throw usersError;
+
     // Fetch all predictions
     const { data: predictions, error: predictionsError } = await supabase
       .from("predictions")
@@ -18,61 +36,70 @@ export async function GET() {
 
     if (eventsError) throw eventsError;
 
-    // Get current user to verify they're accessing this
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-      });
-    }
-
     // Create event map
     const eventMap = new Map((events || []).map((e) => [e.id, e.name]));
 
-    // Group predictions by user
-    interface UserPredictions {
-      [key: string]: {
-        userEmail: string;
-        predictions: Array<{
-          id: string;
-          event_id: string;
-          selected_option: string;
-          is_locked: boolean;
-          eventName?: string;
-        }>;
-      };
+    // Create user map with full names
+    interface UserInfo {
+      fullName: string;
+      email?: string;
     }
 
-    const userMap: UserPredictions = {};
-
-    for (const prediction of predictions || []) {
-      if (!userMap[prediction.user_id]) {
-        userMap[prediction.user_id] = {
-          userEmail: "",
-          predictions: [],
-        };
-      }
-
-      userMap[prediction.user_id].predictions.push({
-        id: prediction.id,
-        event_id: prediction.event_id,
-        selected_option: prediction.selected_option,
-        is_locked: prediction.is_locked,
-        eventName: eventMap.get(prediction.event_id),
+    const userInfoMap = new Map<string, UserInfo>();
+    for (const user of publicUsers || []) {
+      userInfoMap.set(user.id, {
+        fullName: user.full_name || "Unknown",
+        email: user.email,
       });
     }
 
-    // Convert to array and sort by user ID
-    const result = Object.entries(userMap)
+    // Group predictions by user
+    interface UserPredictions {
+      fullName: string;
+      email?: string;
+      predictions: Array<{
+        id: string;
+        event_id: string;
+        selected_option: string;
+        is_locked: boolean;
+        eventName?: string;
+      }>;
+    }
+
+    const userMap = new Map<string, UserPredictions>();
+
+    // Initialize all users (including those without predictions)
+    for (const user of publicUsers || []) {
+      userMap.set(user.id, {
+        fullName: user.full_name || "Unknown",
+        email: user.email,
+        predictions: [],
+      });
+    }
+
+    // Add predictions to users
+    for (const prediction of predictions || []) {
+      const userData = userMap.get(prediction.user_id);
+      if (userData) {
+        userData.predictions.push({
+          id: prediction.id,
+          event_id: prediction.event_id,
+          selected_option: prediction.selected_option,
+          is_locked: prediction.is_locked,
+          eventName: eventMap.get(prediction.event_id),
+        });
+      }
+    }
+
+    // Convert to array and sort by full name
+    const result = Array.from(userMap.entries())
       .map(([userId, data]) => ({
         userId,
-        userEmail: data.userEmail || `User ${userId.substring(0, 8)}`,
+        fullName: data.fullName,
+        email: data.email,
         predictions: data.predictions,
       }))
-      .sort((a, b) => a.userEmail.localeCompare(b.userEmail));
+      .sort((a, b) => a.fullName.localeCompare(b.fullName));
 
     return Response.json(result);
   } catch (error) {
