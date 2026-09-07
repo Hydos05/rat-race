@@ -18,10 +18,10 @@ export default function AdminPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [answerDrafts, setAnswerDrafts] = useState<Record<string, string>>({});
 
-  async function loadEvents() {
-    setLoading(true);
+  async function loadEvents(ignoreRef?: { current: boolean }) {
     const { data, error: fetchError } = await fetchEvents();
 
+    if (ignoreRef?.current) return;
     if (fetchError) {
       setError(fetchError.message);
     } else {
@@ -32,20 +32,14 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!unlocked) return;
-    let ignore = false;
-
-    fetchEvents().then(({ data, error: fetchError }) => {
-      if (ignore) return;
-      if (fetchError) {
-        setError(fetchError.message);
-      } else {
-        setEvents((data as RatRaceEvent[]) ?? []);
-      }
-      setLoading(false);
-    });
-
+    const ignoreRef = { current: false };
+    // Fetching data when a condition (unlocked) becomes true is a standard
+    // effect use case; loadEvents only sets state after its network request
+    // resolves, so this doesn't cause synchronous cascading renders.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadEvents(ignoreRef);
     return () => {
-      ignore = true;
+      ignoreRef.current = true;
     };
   }, [unlocked]);
 
@@ -79,6 +73,7 @@ export default function AdminPage() {
     });
     if (success) {
       setMessage(`${eventToggle.name} ${eventToggle.locked ? "unlocked" : "locked"}.`);
+      setLoading(true);
       loadEvents();
     }
   }
@@ -95,6 +90,7 @@ export default function AdminPage() {
     });
     if (success) {
       setMessage(`Answer recorded for ${eventToScore.name}. Leaderboard recalculated.`);
+      setLoading(true);
       loadEvents();
     }
   }
