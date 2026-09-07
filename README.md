@@ -3,9 +3,9 @@
 Rat Race competition web app - predict sports event winners and compete on the leaderboard.
 
 Participants sign up, predict the winner of 60+ sports events across AFL, Cricket, American
-Football, Basketball, Baseball, Ice Hockey, Soccer, Rugby League, Rugby Union, Tennis, Golf and
-more, and compete on a live leaderboard. Each event is worth 100 points, split equally among
-everyone who picks the correct winner. Submissions close **20 September 2026**.
+Football, College Football, Basketball, Baseball, Ice Hockey, Soccer, Rugby League, Rugby Union,
+Tennis, Golf and more, and compete on a live leaderboard. Each event is worth 100 points, split
+equally among everyone who picks the correct winner. Submissions close **20 September 2026**.
 
 ## Tech stack
 
@@ -18,10 +18,9 @@ everyone who picks the correct winner. Submissions close **20 September 2026**.
 1. **Create a Supabase project** and run the SQL in
    [`supabase/migrations/0001_init.sql`](./supabase/migrations/0001_init.sql) via the SQL editor
    (or `supabase db push` if you use the Supabase CLI). This creates the `users`, `events`,
-   `predictions` and `leaderboard` tables, Row Level Security policies, and seeds all 64 events.
-   If your database was created before this migration set existed, also run
-   [`supabase/migrations/0002_remove_other_option.sql`](./supabase/migrations/0002_remove_other_option.sql),
-   which strips any stored `"Other"` option (the prediction form adds its own).
+   `predictions` and `leaderboard` tables, Row Level Security policies, and seeds all 62 events.
+   If your database was created before this migration set existed, also run the later migration
+   files in order so existing event options and event names match the current seed list.
 2. **Copy `.env.example` to `.env.local`** and fill in your Supabase project URL, anon key,
    service role key, and a secret `ADMIN_KEY` of your choosing.
 3. **Disable email confirmation** so new sign-ups can log in immediately (recommended, since
@@ -73,3 +72,5 @@ Visit `/admin` and enter the `ADMIN_KEY` you configured. From there you can:
 - `supabase/migrations/0001_init.sql` – database schema, RLS policies and seed data.
 - `supabase/migrations/0002_remove_other_option.sql` – removes duplicate `"Other"` options from
   existing events.
+- `supabase/migrations/0003_replace_2027_events.sql` – replaces five events with Heisman Trophy,
+  Serie A Champion and La Liga Champion.

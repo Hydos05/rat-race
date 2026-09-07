@@ -2,6 +2,7 @@ export type EventCategory =
   | "AFL"
   | "Cricket"
   | "American Football"
+  | "College Football"
   | "Basketball"
   | "Baseball"
   | "Ice Hockey"

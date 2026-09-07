@@ -139,7 +139,7 @@ create policy "Anyone can view the leaderboard"
 alter publication supabase_realtime add table public.leaderboard;
 
 -- ------------------------------------------------------------- seed data --
--- 64 Rat Race events across AFL, Cricket, American Football, Basketball,
+-- Original Rat Race event seed across AFL, Cricket, American Football, Basketball,
 -- Baseball, Ice Hockey, Soccer, Rugby League, Rugby Union, Tennis, Golf and
 -- Other categories. Generated from src/data/events.ts.
 insert into public.events (category, name, description, options, display_order) values

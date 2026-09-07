@@ -265,13 +265,27 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
       "Notre Dame", "Penn State", "Clemson", "LSU", "Florida State", "USC",
     ],
   },
+  {
+    category: "College Football",
+    name: "Heisman Trophy",
+    description: "Awarded to the most outstanding player in college football.",
+    display_order: 25,
+    options: [
+      "Arch Manning", "Jeremiah Smith", "Julian Sayin", "DJ Lagway", "Nico Iamaleava",
+      "Dante Moore", "LaNorris Sellers", "Cade Klubnik", "Garrett Nussmeier", "Drew Allar",
+      "Jackson Arnold", "Avery Johnson", "Carson Beck", "Austin Simmons", "Elijah Brown",
+      "Bryce Underwood", "Ryan Williams", "Carnell Tate", "Zachariah Branch", "Jordyn Tyson",
+      "Makai Lemon", "Justice Haynes", "Jeremiyah Love", "Nicholas Singleton", "Kaytron Allen",
+      "Rueben Owens", "CJ Baxter", "Dylan Raiola", "Devon Dampier", "John Mateer",
+    ],
+  },
 
   // ---------------------------------------------------------- Basketball
   {
     category: "Basketball",
     name: "NBL Champion 2026-27",
     description: "Winner of the National Basketball League (Australia) championship series.",
-    display_order: 25,
+    display_order: 26,
     options: [
       "Melbourne United", "Perth Wildcats", "New Zealand Breakers", "Tasmania JackJumpers",
       "Sydney Kings", "Illawarra Hawks", "Adelaide 36ers", "Brisbane Bullets",
@@ -282,7 +296,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Basketball",
     name: "NBL MVP 2026-27",
     description: "NBL's Most Valuable Player award.",
-    display_order: 26,
+    display_order: 27,
     options: [
       "Bryce Cotton", "Jack McVeigh", "Sunday Dech", "Will Magnay",
       "DJ Hogg", "Xavier Cooks", "Josh Giddey",
@@ -292,7 +306,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Basketball",
     name: "NBA Eastern Conference Champion 2027",
     description: "Winner of the NBA Eastern Conference Finals.",
-    display_order: 27,
+    display_order: 28,
     options: [
       "Boston Celtics", "New York Knicks", "Milwaukee Bucks", "Cleveland Cavaliers",
       "Indiana Pacers", "Orlando Magic", "Philadelphia 76ers", "Miami Heat", "Atlanta Hawks",
@@ -302,7 +316,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Basketball",
     name: "NBA Western Conference Champion 2027",
     description: "Winner of the NBA Western Conference Finals.",
-    display_order: 28,
+    display_order: 29,
     options: [
       "Denver Nuggets", "Oklahoma City Thunder", "Minnesota Timberwolves", "Dallas Mavericks",
       "Los Angeles Lakers", "Phoenix Suns", "Golden State Warriors", "Memphis Grizzlies",
@@ -313,7 +327,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Basketball",
     name: "NBA Champion 2027",
     description: "Winner of the NBA Finals.",
-    display_order: 29,
+    display_order: 30,
     options: [
       "Boston Celtics", "Denver Nuggets", "Oklahoma City Thunder", "New York Knicks",
       "Minnesota Timberwolves", "Milwaukee Bucks", "Dallas Mavericks", "Los Angeles Lakers",
@@ -324,7 +338,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Basketball",
     name: "NBA MVP 2026-27",
     description: "NBA's Most Valuable Player award.",
-    display_order: 30,
+    display_order: 31,
     options: [
       "Nikola Jokic", "Shai Gilgeous-Alexander", "Luka Doncic", "Giannis Antetokounmpo",
       "Jayson Tatum", "Anthony Edwards", "Victor Wembanyama", "Joel Embiid",
@@ -334,7 +348,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Basketball",
     name: "March Madness Champion 2027",
     description: "Winner of the NCAA Men's Division I Basketball Tournament.",
-    display_order: 31,
+    display_order: 32,
     options: [
       "Duke", "Kansas", "Kentucky", "UConn", "North Carolina", "Houston",
       "Purdue", "Auburn", "Arizona", "Gonzaga", "Alabama", "Tennessee",
@@ -346,7 +360,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Baseball",
     name: "World Series Champion 2027",
     description: "Winner of Major League Baseball's World Series.",
-    display_order: 32,
+    display_order: 33,
     options: [
       "Los Angeles Dodgers", "New York Yankees", "Atlanta Braves", "Houston Astros",
       "Philadelphia Phillies", "Baltimore Orioles", "Texas Rangers", "San Diego Padres",
@@ -357,7 +371,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Ice Hockey",
     name: "Stanley Cup Champion 2027",
     description: "Winner of the NHL's Stanley Cup Finals.",
-    display_order: 33,
+    display_order: 34,
     options: [
       "Florida Panthers", "Edmonton Oilers", "Dallas Stars", "Colorado Avalanche",
       "New York Rangers", "Vegas Golden Knights", "Toronto Maple Leafs", "Boston Bruins",
@@ -370,7 +384,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Soccer",
     name: "EPL Champion 2026-27",
     description: "Winner of the English Premier League.",
-    display_order: 34,
+    display_order: 35,
     options: [
       "Manchester City", "Arsenal", "Liverpool", "Chelsea", "Manchester United",
       "Tottenham Hotspur", "Newcastle United", "Aston Villa", "Brighton", "West Ham United",
@@ -378,9 +392,36 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
   },
   {
     category: "Soccer",
+    name: "Serie A Champion",
+    description: "Winner of Italy's Serie A.",
+    display_order: 36,
+    options: [
+      "Inter Milan", "Napoli", "Juventus", "AC Milan", "Atalanta", "Roma",
+      "Lazio", "Fiorentina", "Bologna", "Torino", "Genoa", "Monza",
+      "Udinese", "Sassuolo", "Parma", "Como", "Cagliari", "Verona",
+      "Lecce", "Empoli", "Palermo", "Sampdoria", "Bari", "Venezia",
+      "Cremonese", "Modena", "Pisa", "Spezia", "Catanzaro", "Frosinone",
+    ],
+  },
+  {
+    category: "Soccer",
+    name: "La Liga Champion",
+    description: "Winner of Spain's La Liga.",
+    display_order: 37,
+    options: [
+      "Real Madrid", "Barcelona", "Atletico Madrid", "Athletic Bilbao", "Villarreal",
+      "Real Sociedad", "Real Betis", "Sevilla", "Valencia", "Celta Vigo",
+      "Osasuna", "Getafe", "Rayo Vallecano", "Mallorca", "Girona",
+      "Espanyol", "Alaves", "Las Palmas", "Levante", "Elche",
+      "Granada", "Real Valladolid", "Leganes", "Cadiz", "Deportivo La Coruna",
+      "Real Zaragoza", "Eibar", "Sporting Gijon", "Racing Santander", "Malaga",
+    ],
+  },
+  {
+    category: "Soccer",
     name: "FA Cup Winner 2027",
     description: "Winner of the English FA Cup.",
-    display_order: 35,
+    display_order: 38,
     options: [
       "Manchester City", "Arsenal", "Liverpool", "Chelsea", "Manchester United",
       "Tottenham Hotspur", "Newcastle United", "Aston Villa",
@@ -390,7 +431,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Soccer",
     name: "UEFA Champions League Winner 2027",
     description: "Winner of the UEFA Champions League.",
-    display_order: 36,
+    display_order: 39,
     options: [
       "Real Madrid", "Manchester City", "Bayern Munich", "Paris Saint-Germain",
       "Liverpool", "Barcelona", "Arsenal", "Inter Milan", "Atletico Madrid",
@@ -401,7 +442,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Soccer",
     name: "UEFA Europa League Winner 2027",
     description: "Winner of the UEFA Europa League.",
-    display_order: 37,
+    display_order: 40,
     options: [
       "Tottenham Hotspur", "Ajax", "AS Roma", "Sevilla", "Atalanta",
       "Bayer Leverkusen", "Rangers", "Fiorentina",
@@ -411,7 +452,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Soccer",
     name: "A-League Champion 2026-27",
     description: "Winner of the A-League Men's Grand Final.",
-    display_order: 38,
+    display_order: 41,
     options: [
       "Melbourne City", "Melbourne Victory", "Sydney FC", "Central Coast Mariners",
       "Western Sydney Wanderers", "Wellington Phoenix", "Adelaide United",
@@ -422,7 +463,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Soccer",
     name: "Ballon d'Or 2027",
     description: "Awarded to the world's best male soccer player.",
-    display_order: 39,
+    display_order: 42,
     options: [
       "Vinicius Jr", "Jude Bellingham", "Kylian Mbappe", "Erling Haaland",
       "Rodri", "Lamine Yamal", "Bukayo Saka", "Dani Carvajal",
@@ -432,7 +473,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Soccer",
     name: "FIFA Women's World Cup Winner 2027",
     description: "Winner of the FIFA Women's World Cup.",
-    display_order: 40,
+    display_order: 43,
     options: [
       "USA", "Spain", "England", "Germany", "Australia", "Sweden",
       "France", "Japan", "Netherlands", "Brazil",
@@ -444,7 +485,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Rugby League",
     name: "NRL Premier 2027",
     description: "Winner of the NRL Grand Final.",
-    display_order: 41,
+    display_order: 44,
     options: [
       "Penrith Panthers", "Melbourne Storm", "Brisbane Broncos", "Cronulla Sharks",
       "Sydney Roosters", "Canterbury Bulldogs", "South Sydney Rabbitohs", "Newcastle Knights",
@@ -457,36 +498,18 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Rugby League",
     name: "Dally M Medallist 2027",
     description: "NRL's official player of the year award.",
-    display_order: 42,
+    display_order: 45,
     options: [
       "Nathan Cleary", "Reece Walsh", "Kalyn Ponga", "Mitchell Moses",
       "James Tedesco", "Cameron Munster", "Isaah Yeo", "Payne Haas",
     ],
   },
-  {
-    category: "Rugby League",
-    name: "Clive Churchill Medallist 2027",
-    description: "Awarded to the player of the match in the NRL Grand Final.",
-    display_order: 43,
-    options: [
-      "Nathan Cleary", "Reece Walsh", "James Tedesco", "Cameron Munster",
-      "Isaah Yeo", "Mitchell Moses", "Payne Haas",
-    ],
-  },
-  {
-    category: "Rugby League",
-    name: "State of Origin Series Winner 2027",
-    description: "Winner of the annual State of Origin rugby league series.",
-    display_order: 44,
-    options: ["New South Wales", "Queensland"],
-  },
-
   // ------------------------------------------------------------ Rugby Union
   {
     category: "Rugby Union",
     name: "Super Rugby Pacific Champion 2027",
     description: "Winner of the Super Rugby Pacific final.",
-    display_order: 45,
+    display_order: 46,
     options: [
       "Blues", "Chiefs", "Crusaders", "Hurricanes", "Highlanders",
       "Brumbies", "Waratahs", "Reds", "Force", "Fijian Drua", "Moana Pasifika",
@@ -494,23 +517,9 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
   },
   {
     category: "Rugby Union",
-    name: "Rugby Championship Winner 2027",
-    description: "Winner of the annual southern hemisphere rugby union championship.",
-    display_order: 46,
-    options: ["New Zealand", "South Africa", "Australia", "Argentina"],
-  },
-  {
-    category: "Rugby Union",
-    name: "Bledisloe Cup Winner 2027",
-    description: "Winner of the annual Australia vs New Zealand rugby union series.",
-    display_order: 47,
-    options: ["New Zealand", "Australia"],
-  },
-  {
-    category: "Rugby Union",
     name: "Rugby World Cup Winner 2027",
     description: "Winner of the Rugby World Cup.",
-    display_order: 48,
+    display_order: 47,
     options: [
       "New Zealand", "South Africa", "France", "Ireland", "England",
       "Australia", "Argentina", "Wales", "Scotland", "Fiji",
@@ -522,7 +531,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Tennis",
     name: "Australian Open Men's Champion 2027",
     description: "Winner of the Australian Open men's singles title.",
-    display_order: 49,
+    display_order: 48,
     options: [
       "Jannik Sinner", "Carlos Alcaraz", "Novak Djokovic", "Alexander Zverev",
       "Daniil Medvedev", "Taylor Fritz", "Casper Ruud", "Alex de Minaur",
@@ -532,7 +541,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Tennis",
     name: "Australian Open Women's Champion 2027",
     description: "Winner of the Australian Open women's singles title.",
-    display_order: 50,
+    display_order: 49,
     options: [
       "Aryna Sabalenka", "Iga Swiatek", "Coco Gauff", "Elena Rybakina",
       "Jasmine Paolini", "Qinwen Zheng", "Jessica Pegula", "Emma Navarro",
@@ -542,7 +551,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Tennis",
     name: "French Open Men's Champion 2027",
     description: "Winner of the French Open men's singles title.",
-    display_order: 51,
+    display_order: 50,
     options: [
       "Carlos Alcaraz", "Jannik Sinner", "Novak Djokovic", "Alexander Zverev",
       "Casper Ruud", "Daniil Medvedev", "Stefanos Tsitsipas",
@@ -552,7 +561,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Tennis",
     name: "French Open Women's Champion 2027",
     description: "Winner of the French Open women's singles title.",
-    display_order: 52,
+    display_order: 51,
     options: [
       "Iga Swiatek", "Aryna Sabalenka", "Coco Gauff", "Elena Rybakina",
       "Jasmine Paolini", "Qinwen Zheng",
@@ -562,7 +571,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Tennis",
     name: "Wimbledon Men's Champion 2027",
     description: "Winner of the Wimbledon men's singles title.",
-    display_order: 53,
+    display_order: 52,
     options: [
       "Carlos Alcaraz", "Jannik Sinner", "Novak Djokovic", "Daniil Medvedev",
       "Alexander Zverev", "Taylor Fritz",
@@ -572,7 +581,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Tennis",
     name: "Wimbledon Women's Champion 2027",
     description: "Winner of the Wimbledon women's singles title.",
-    display_order: 54,
+    display_order: 53,
     options: [
       "Aryna Sabalenka", "Iga Swiatek", "Coco Gauff", "Elena Rybakina", "Jasmine Paolini",
     ],
@@ -581,7 +590,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Tennis",
     name: "US Open Men's Champion 2027",
     description: "Winner of the US Open men's singles title.",
-    display_order: 55,
+    display_order: 54,
     options: [
       "Jannik Sinner", "Carlos Alcaraz", "Novak Djokovic", "Alexander Zverev",
       "Daniil Medvedev", "Taylor Fritz",
@@ -591,7 +600,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Tennis",
     name: "US Open Women's Champion 2027",
     description: "Winner of the US Open women's singles title.",
-    display_order: 56,
+    display_order: 55,
     options: [
       "Aryna Sabalenka", "Coco Gauff", "Iga Swiatek", "Elena Rybakina", "Jessica Pegula",
     ],
@@ -602,7 +611,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Golf",
     name: "Masters Champion 2027",
     description: "Winner of the Masters Tournament at Augusta National.",
-    display_order: 57,
+    display_order: 56,
     options: [
       "Scottie Scheffler", "Rory McIlroy", "Jon Rahm", "Xander Schauffele",
       "Bryson DeChambeau", "Ludvig Aberg", "Collin Morikawa", "Viktor Hovland",
@@ -612,7 +621,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Golf",
     name: "PGA Championship Winner 2027",
     description: "Winner of the PGA Championship.",
-    display_order: 58,
+    display_order: 57,
     options: [
       "Scottie Scheffler", "Rory McIlroy", "Xander Schauffele", "Bryson DeChambeau",
       "Jon Rahm", "Viktor Hovland", "Collin Morikawa",
@@ -622,7 +631,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Golf",
     name: "US Open Winner 2027",
     description: "Winner of the US Open golf championship.",
-    display_order: 59,
+    display_order: 58,
     options: [
       "Scottie Scheffler", "Bryson DeChambeau", "Rory McIlroy", "Xander Schauffele",
       "Jon Rahm", "Ludvig Aberg",
@@ -632,26 +641,18 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Golf",
     name: "The Open Champion 2027",
     description: "Winner of The Open Championship (British Open).",
-    display_order: 60,
+    display_order: 59,
     options: [
       "Scottie Scheffler", "Rory McIlroy", "Xander Schauffele", "Justin Rose",
       "Jon Rahm", "Viktor Hovland",
     ],
   },
-  {
-    category: "Golf",
-    name: "Ryder Cup Winner 2027",
-    description: "Winner of the biennial Ryder Cup between the USA and Europe.",
-    display_order: 61,
-    options: ["USA", "Europe"],
-  },
-
   // ------------------------------------------------------------------ Other
   {
     category: "Other",
     name: "Super Netball Champion 2027",
     description: "Winner of the Suncorp Super Netball Grand Final.",
-    display_order: 62,
+    display_order: 60,
     options: [
       "NSW Swifts", "Melbourne Vixens", "West Coast Fever", "Adelaide Thunderbirds",
       "Sunshine Coast Lightning", "Queensland Firebirds", "Giants Netball", "Collingwood Magpies",
@@ -661,7 +662,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Other",
     name: "Tour de France Winner 2027",
     description: "Winner of the Tour de France general classification.",
-    display_order: 63,
+    display_order: 61,
     options: [
       "Tadej Pogacar", "Jonas Vingegaard", "Remco Evenepoel", "Primoz Roglic",
       "Egan Bernal", "Juan Ayuso",
@@ -671,7 +672,7 @@ export const RAT_RACE_EVENTS: EventSeed[] = [
     category: "Other",
     name: "Netball World Cup Winner 2027",
     description: "Winner of the Netball World Cup.",
-    display_order: 64,
+    display_order: 62,
     options: [
       "Australia", "New Zealand", "England", "Jamaica", "South Africa", "Uganda",
     ],
