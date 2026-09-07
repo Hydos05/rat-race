@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { createAdminClient, isValidAdminKey } from "@/lib/supabase/admin";
 import { cleanOptions } from "@/lib/eventOptions";
 
+const MAX_OPTIONS = 200;
+const MAX_OPTION_LENGTH = 200;
+
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
 
@@ -15,8 +18,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "eventId is required." }, { status: 400 });
   }
 
-  if (!Array.isArray(options) || options.some((option) => typeof option !== "string")) {
-    return NextResponse.json({ error: "options must be an array of strings." }, { status: 400 });
+  if (
+    !Array.isArray(options) ||
+    options.length > MAX_OPTIONS ||
+    options.some((option) => typeof option !== "string" || option.length > MAX_OPTION_LENGTH)
+  ) {
+    return NextResponse.json(
+      {
+        error: `options must be an array of at most ${MAX_OPTIONS} strings, each up to ${MAX_OPTION_LENGTH} characters.`,
+      },
+      { status: 400 },
+    );
   }
 
   const cleanedOptions = cleanOptions(options);

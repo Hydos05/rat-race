@@ -5,7 +5,14 @@
  * both apply exactly the same rules.
  */
 export function cleanOptions(options: string[]): string[] {
-  return options
-    .map((option) => option.trim())
-    .filter((option, index, all) => option.length > 0 && all.indexOf(option) === index);
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const option of options) {
+    const trimmed = option.trim();
+    if (trimmed.length > 0 && !seen.has(trimmed)) {
+      seen.add(trimmed);
+      result.push(trimmed);
+    }
+  }
+  return result;
 }
