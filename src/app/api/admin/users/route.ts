@@ -30,6 +30,8 @@ export async function GET() {
       throw usersError;
     }
 
+    console.log("Public users fetched:", publicUsers);
+
     // Fetch all predictions
     const { data: predictions, error: predictionsError } = await supabase
       .from("predictions")
@@ -63,13 +65,15 @@ export async function GET() {
     const userMap = new Map<string, UserPredictions>();
 
     // Initialize all users (including those without predictions)
-    for (const user of publicUsers || []) {
-      userMap.set(user.id, {
-        fullName: user.full_name || user.email || "Unknown User",
-        email: user.email,
+    for (const publicUser of publicUsers || []) {
+      userMap.set(publicUser.id, {
+        fullName: publicUser.full_name || publicUser.email || "Unknown User",
+        email: publicUser.email,
         predictions: [],
       });
     }
+
+    console.log("User map initialized:", userMap);
 
     // Add predictions to users
     for (const prediction of predictions || []) {
@@ -94,6 +98,8 @@ export async function GET() {
         predictions: data.predictions,
       }))
       .sort((a, b) => a.fullName.localeCompare(b.fullName));
+
+    console.log("Final result:", result);
 
     return Response.json(result);
   } catch (error) {
