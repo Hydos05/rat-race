@@ -195,9 +195,62 @@ export default function PredictionForm({
     setError(null);
     setMessage(null);
 
+    // Get the locked event IDs that need to be cleared in the database
+    const lockedEventIds = Array.from(Object.entries(locks))
+      .filter(([_, isLocked]) => isLocked)
+      .map(([eventId, _]) => eventId)
+      .filter((eventId) => savedEventIds.has(eventId));
+
     // Clear all locks locally
     updateLocks(() => ({}));
-    setMessage("All locks cleared.");
+
+    if (lockedEventIds.length === 0) {
+      setMessage("All locks cleared.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const supabase = createClient();
+
+      // For each locked prediction, update it to is_locked = false
+      for (const eventId of lockedEventIds) {
+        const existingPrediction = existingPredictions.find(
+          (p) => p.event_id === eventId,
+        );
+        if (existingPrediction) {
+          const { error: upsertError } = await supabase
+            .from("predictions")
+            .upsert(
+              [
+                {
+                  user_id: userId,
+                  event_id: eventId,
+                  selected_option: existingPrediction.selected_option,
+                  is_locked: false,
+                },
+              ],
+              { onConflict: "user_id,event_id" },
+            );
+
+          if (upsertError) {
+            setError(upsertError.message);
+            setSaving(false);
+            // Restore locks on failure
+            updateLocks(() => buildInitialLocks(existingPredictions));
+            return;
+          }
+        }
+      }
+
+      setMessage("All locks cleared and saved!");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to clear locks");
+      // Restore locks on failure
+      updateLocks(() => buildInitialLocks(existingPredictions));
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleSubmit() {
