@@ -100,7 +100,7 @@ export default function PredictionForm({
     () => new Set(existingPredictions.map((prediction) => prediction.event_id)),
   );
   // Track which locks were already saved in the database initially
-  const initialLocksRef = useRef<Locks>(() => buildInitialLocks(existingPredictions));
+  const initialLocksRef = useRef<Locks>(buildInitialLocks(existingPredictions));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
