@@ -9,7 +9,7 @@
  * application constants). If you change the deadline here, update both
  * policies in that migration file to match.
  */
-export const SUBMISSION_DEADLINE = new Date("2026-09-20T23:59:59+10:00");
+export const SUBMISSION_DEADLINE = new Date("2026-09-25T00:00:00+08:00");
 
 export const POINTS_PER_EVENT = 100;
 
