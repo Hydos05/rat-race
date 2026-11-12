@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
 
 export async function GET() {
   try {
@@ -21,23 +22,22 @@ export async function GET() {
     }
 
     // Fetch all users from public.users table with their full names
-    const { data: publicUsers, error: usersError } = await supabase
-      .from("users")
-      .select("id, full_name, email");
-
-    if (usersError) {
-      console.error("Error fetching users:", usersError);
-      throw usersError;
-    }
-
-    console.log("Public users fetched:", publicUsers);
+    const publicUsers = await fetchAllRows<{
+      id: string;
+      full_name: string | null;
+      email: string;
+    }>((from, to) =>
+      supabase.from("users").select("id, full_name, email").order("id").range(from, to),
+    );
 
     // Fetch all predictions
-    const { data: predictions, error: predictionsError } = await supabase
-      .from("predictions")
-      .select("*");
-
-    if (predictionsError) throw predictionsError;
+    const predictions = await fetchAllRows<{
+      id: string;
+      user_id: string;
+      event_id: string;
+      selected_option: string;
+      is_locked: boolean;
+    }>((from, to) => supabase.from("predictions").select("*").order("id").range(from, to));
 
     // Fetch all events
     const { data: events, error: eventsError } = await supabase
@@ -65,7 +65,7 @@ export async function GET() {
     const userMap = new Map<string, UserPredictions>();
 
     // Initialize all users (including those without predictions)
-    for (const publicUser of publicUsers || []) {
+    for (const publicUser of publicUsers) {
       userMap.set(publicUser.id, {
         fullName: publicUser.full_name || publicUser.email || "Unknown User",
         email: publicUser.email,
@@ -76,7 +76,7 @@ export async function GET() {
     console.log("User map initialized:", userMap);
 
     // Add predictions to users
-    for (const prediction of predictions || []) {
+    for (const prediction of predictions) {
       const userData = userMap.get(prediction.user_id);
       if (userData) {
         userData.predictions.push({

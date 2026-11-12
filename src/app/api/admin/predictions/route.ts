@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient, isValidAdminKey } from "@/lib/supabase/admin";
+import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
 
 interface AdminPredictionRow {
   user_id: string;
@@ -21,21 +22,32 @@ export async function POST(request: Request) {
   }
 
   const supabase = createAdminClient();
-  const [predictionsResult, usersResult, feesResult] = await Promise.all([
-    supabase.from("predictions").select(
-      "user_id, event_id, selected_option, is_locked, events ( name, category )",
-    ),
-    supabase.from("users").select("id, full_name, email"),
-    supabase.from("entry_fees").select("user_id, paid"),
-  ]);
-
-  const error = predictionsResult.error ?? usersResult.error ?? feesResult.error;
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  let rows: AdminPredictionRow[];
+  let userRows: { id: string; full_name: string | null; email: string }[];
+  let fees: { user_id: string; paid: boolean }[];
+  try {
+    [rows, userRows, fees] = await Promise.all([
+      fetchAllRows<AdminPredictionRow>((from, to) =>
+        supabase
+          .from("predictions")
+          .select("user_id, event_id, selected_option, is_locked, events ( name, category )")
+          .order("id")
+          .range(from, to)
+          .overrideTypes<AdminPredictionRow[], { merge: false }>(),
+      ),
+      fetchAllRows<{ id: string; full_name: string | null; email: string }>((from, to) =>
+        supabase.from("users").select("id, full_name, email").order("id").range(from, to),
+      ),
+      fetchAllRows<{ user_id: string; paid: boolean }>((from, to) =>
+        supabase.from("entry_fees").select("user_id, paid").order("user_id").range(from, to),
+      ),
+    ]);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Could not load predictions.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 
-  const rows = (predictionsResult.data as unknown as AdminPredictionRow[] | null) ?? [];
-  const feesByUser = new Map((feesResult.data ?? []).map((fee) => [fee.user_id, fee.paid]));
+  const feesByUser = new Map(fees.map((fee) => [fee.user_id, fee.paid]));
   const byUser = new Map<
     string,
     {
@@ -52,7 +64,7 @@ export async function POST(request: Request) {
     }
   >();
 
-  for (const user of usersResult.data ?? []) {
+  for (const user of userRows) {
     byUser.set(user.id, {
       userId: user.id,
       name: user.full_name || user.email || "Anonymous",

@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
 import { calculateEventPoints } from "@/lib/scoring";
 
 /**
@@ -20,21 +21,28 @@ export async function recalculateLeaderboard() {
   const totals = new Map<string, number>();
 
   if (scoredEvents.length > 0) {
-    const { data: predictions, error: predictionsError } = await supabase
-      .from("predictions")
-      .select("user_id, event_id, selected_option, is_locked")
-      .in(
-        "event_id",
-        scoredEvents.map((event) => event.id),
-      );
-
-    if (predictionsError) throw predictionsError;
+    const predictions = await fetchAllRows<{
+      user_id: string;
+      event_id: string;
+      selected_option: string;
+      is_locked: boolean;
+    }>((from, to) =>
+      supabase
+        .from("predictions")
+        .select("user_id, event_id, selected_option, is_locked")
+        .in(
+          "event_id",
+          scoredEvents.map((event) => event.id),
+        )
+        .order("id")
+        .range(from, to),
+    );
 
     const predictionsByEvent = new Map<
       string,
       { user_id: string; selected_option: string; is_locked: boolean }[]
     >();
-    for (const prediction of predictions ?? []) {
+    for (const prediction of predictions) {
       const list = predictionsByEvent.get(prediction.event_id) ?? [];
       list.push(prediction);
       predictionsByEvent.set(prediction.event_id, list);
@@ -52,10 +60,11 @@ export async function recalculateLeaderboard() {
     }
   }
 
-  const { data: allUsers, error: usersError } = await supabase.from("users").select("id");
-  if (usersError) throw usersError;
+  const allUsers = await fetchAllRows<{ id: string }>((from, to) =>
+    supabase.from("users").select("id").order("id").range(from, to),
+  );
 
-  const rows = (allUsers ?? []).map((user) => ({
+  const rows = allUsers.map((user) => ({
     user_id: user.id,
     total_points: Math.round((totals.get(user.id) ?? 0) * 100) / 100,
     updated_at: new Date().toISOString(),
