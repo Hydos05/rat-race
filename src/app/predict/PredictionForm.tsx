@@ -145,6 +145,12 @@ export default function PredictionForm({
    * being counted as an extra lock.
    */
   function handleToggleLock(eventId: string) {
+    const event = cleanedEvents.find((item) => item.id === eventId);
+    if (!event?.lock_eligible) {
+      setError("Locks are not available for this event.");
+      return;
+    }
+
     // Debounce rapid clicks on the same lock to avoid overlapping requests.
     const now = Date.now();
     if (now - (lastToggleAtRef.current[eventId] ?? 0) < LOCK_TOGGLE_DEBOUNCE_MS) return;
@@ -345,7 +351,7 @@ export default function PredictionForm({
 
           if (upsertError) {
             setError(
-              upsertError.code === "23514"
+              upsertError.code === "23514" && upsertError.message.startsWith("Maximum ")
                 ? `Maximum ${MAX_LOCKS} locks per competition`
                 : upsertError.message,
             );
@@ -416,6 +422,7 @@ export default function PredictionForm({
         <p className="text-xs text-gray-400">
           Lock up to {MAX_LOCKS} events to earn {LOCK_MULTIPLIER}x the points you win on
           them. Locks can be changed while submissions are open and the event is unlocked.
+          Some events are not eligible for locks.
         </p>
       </div>
 
@@ -477,7 +484,9 @@ export default function PredictionForm({
                   <label
                     htmlFor={`lock-${event.id}`}
                     className="flex items-center gap-2 text-xs text-gray-300"
-                    title={`Locked events pay ${LOCK_MULTIPLIER}x points. You can lock up to ${MAX_LOCKS} events.`}
+                    title={event.lock_eligible
+                      ? `Locked events pay ${LOCK_MULTIPLIER}x points. You can lock up to ${MAX_LOCKS} events.`
+                      : "Locks are not available for this event."}
                   >
                     <input
                       id={`lock-${event.id}`}
@@ -485,13 +494,16 @@ export default function PredictionForm({
                       checked={locks[event.id] ?? false}
                       disabled={
                         event.locked ||
+                        !event.lock_eligible ||
                         !submissionsOpen ||
                         (!locks[event.id] && lockCount >= MAX_LOCKS)
                       }
                       onChange={() => handleToggleLock(event.id)}
                       className="h-4 w-4 accent-yellow-400 disabled:opacity-50"
                     />
-                    Lock this event ({LOCK_MULTIPLIER}x points)
+                    {event.lock_eligible
+                      ? `Lock this event (${LOCK_MULTIPLIER}x points)`
+                      : "Locks unavailable for this event"}
                   </label>
                   {answers[event.id] === OTHER_OPTION && (
                     <input

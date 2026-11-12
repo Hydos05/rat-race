@@ -7,7 +7,9 @@ Football, College Football, Basketball, Baseball, Ice Hockey, Soccer, Rugby Leag
 Tennis, Golf and more, and compete on a live leaderboard. Each event is worth 100 points, split
 equally among everyone who picks the correct winner. Each player can also nominate up to three
 predictions as **Locks**, which pay double points if they come in. Submissions remain open
-until an administrator closes them.
+until an administrator closes them. Locks are unavailable for AFC Champion, NFC Champion,
+Super Bowl winner, NFL MVP, Offensive Player of the Year, Defensive Player of the Year,
+College Football Playoff Champion and Heisman Trophy. Predictions for these events are still allowed.
 
 ## Tech stack
 
@@ -85,3 +87,6 @@ Visit `/admin` and enter the `ADMIN_KEY` you configured. From there you can:
   enforcing a maximum of three Locks per user.
 - `supabase/migrations/0005_submission_settings.sql` – reopens submissions and adds an admin-controlled
   setting enforced by prediction RLS policies.
+- `supabase/migrations/0006_restrict_prediction_locks.sql` – clears existing locks once, excludes
+  eight events from locks, and recalculates the leaderboard. Run it before deploying the updated app;
+  do not rerun it after players have chosen new locks. Players should refresh an already open form.

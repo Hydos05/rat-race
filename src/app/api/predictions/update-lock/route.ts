@@ -82,7 +82,7 @@ export async function POST(request: Request) {
     // concurrent requests slipping past the count check above; surface its
     // check violation as the same friendly message.
     const message =
-      updateError.code === "23514"
+      updateError.code === "23514" && updateError.message.startsWith("Maximum ")
         ? `Maximum ${MAX_LOCKS} locks per competition`
         : updateError.message;
     return NextResponse.json({ error: message }, { status: 400 });

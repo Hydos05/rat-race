@@ -32,6 +32,7 @@ export interface RatRaceEvent {
   display_order: number;
   created_at: string;
   locked: boolean;
+  lock_eligible: boolean;
 }
 
 export interface Prediction {
