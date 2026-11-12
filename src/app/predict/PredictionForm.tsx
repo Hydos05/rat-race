@@ -1,16 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { LOCK_MULTIPLIER, MAX_LOCKS, SUBMISSION_DEADLINE } from "@/lib/constants";
+import { LOCK_MULTIPLIER, MAX_LOCKS } from "@/lib/constants";
 import { OTHER_OPTION, cleanOptions } from "@/lib/eventOptions";
-import CountdownTimer from "@/components/CountdownTimer";
 import type { Prediction, RatRaceEvent } from "@/types/database";
 
 interface PredictionFormProps {
   userId: string;
   events: RatRaceEvent[];
   existingPredictions: Prediction[];
+  submissionsOpen: boolean;
   loadError: string | null;
 }
 
@@ -81,10 +81,10 @@ export default function PredictionForm({
   userId,
   events,
   existingPredictions,
+  submissionsOpen,
   loadError,
 }: PredictionFormProps) {
   const cleanedEvents = useMemo(() => withCleanOptions(events), [events]);
-  const [deadlinePassed, setDeadlinePassed] = useState(false);
   const [answers, setAnswers] = useState<Answers>(() =>
     buildInitialAnswers(cleanedEvents, existingPredictions),
   );
@@ -102,15 +102,6 @@ export default function PredictionForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-
-  useEffect(() => {
-    function checkDeadline() {
-      setDeadlinePassed(Date.now() > SUBMISSION_DEADLINE.getTime());
-    }
-    checkDeadline();
-    const interval = setInterval(checkDeadline, 1000);
-    return () => clearInterval(interval);
-  }, []);
 
   const categories = useMemo(() => {
     const groups = new Map<string, RatRaceEvent[]>();
@@ -196,16 +187,16 @@ export default function PredictionForm({
     setMessage(null);
 
     // Get the locked event IDs that need to be cleared in the database
-    const lockedEventIds = Array.from(Object.entries(locks))
-      .filter(([_, isLocked]) => isLocked)
-      .map(([eventId, _]) => eventId)
-      .filter((eventId) => savedEventIds.has(eventId));
-
-    // Clear all locks locally
-    updateLocks(() => ({}));
+    const editableIds = new Set(cleanedEvents.filter((event) => !event.locked).map((event) => event.id));
+    const lockedEventIds = Object.keys(locks).filter(
+      (eventId) => locks[eventId] && editableIds.has(eventId) && savedEventIds.has(eventId),
+    );
 
     if (lockedEventIds.length === 0) {
-      setMessage("All locks cleared.");
+      updateLocks((prev) => Object.fromEntries(
+        Object.entries(prev).filter(([eventId]) => !editableIds.has(eventId)),
+      ));
+      setMessage("Locks on editable events cleared.");
       return;
     }
 
@@ -213,41 +204,26 @@ export default function PredictionForm({
     try {
       const supabase = createClient();
 
-      // For each locked prediction, update it to is_locked = false
-      for (const eventId of lockedEventIds) {
-        const existingPrediction = existingPredictions.find(
-          (p) => p.event_id === eventId,
-        );
-        if (existingPrediction) {
-          const { error: upsertError } = await supabase
-            .from("predictions")
-            .upsert(
-              [
-                {
-                  user_id: userId,
-                  event_id: eventId,
-                  selected_option: existingPrediction.selected_option,
-                  is_locked: false,
-                },
-              ],
-              { onConflict: "user_id,event_id" },
-            );
-
-          if (upsertError) {
-            setError(upsertError.message);
-            setSaving(false);
-            // Restore locks on failure
-            updateLocks(() => buildInitialLocks(existingPredictions));
-            return;
-          }
-        }
+      const { data: updated, error: updateError } = await supabase
+        .from("predictions")
+        .update({ is_locked: false })
+        .eq("user_id", userId)
+        .in("event_id", lockedEventIds)
+        .select("event_id");
+      if (updateError) {
+        setError(updateError.message);
+        return;
       }
-
-      setMessage("All locks cleared and saved!");
+      if (updated.length !== lockedEventIds.length) {
+        setError("Some locks could not be cleared. Refresh the page and try again.");
+        return;
+      }
+      updateLocks((prev) => Object.fromEntries(
+        Object.entries(prev).filter(([eventId]) => !editableIds.has(eventId)),
+      ));
+      setMessage("Locks on editable events cleared and saved!");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to clear locks");
-      // Restore locks on failure
-      updateLocks(() => buildInitialLocks(existingPredictions));
     } finally {
       setSaving(false);
     }
@@ -257,8 +233,8 @@ export default function PredictionForm({
     setError(null);
     setMessage(null);
 
-    if (deadlinePassed) {
-      setError("The submission deadline has passed.");
+    if (!submissionsOpen) {
+      setError("Submissions are closed.");
       return;
     }
 
@@ -310,6 +286,29 @@ export default function PredictionForm({
     try {
       const supabase = createClient();
 
+      if (deletions.length > 0) {
+        const { data: deleted, error: deleteError } = await supabase
+          .from("predictions")
+          .delete()
+          .eq("user_id", userId)
+          .in("event_id", deletions)
+          .select("event_id");
+
+        if (deleteError) {
+          setError(deleteError.message);
+          return;
+        }
+        if (deleted.length !== deletions.length) {
+          setError("Some predictions could not be removed. Refresh the page and try again.");
+          return;
+        }
+        setSavedEventIds((previous) => {
+          const next = new Set(previous);
+          deletions.forEach((eventId) => next.delete(eventId));
+          return next;
+        });
+      }
+
       if (rows.length > 0) {
         // Separate rows into new predictions and updates to existing predictions
         const newRows = rows.filter((row) => !savedEventIds.has(row.event_id));
@@ -353,50 +352,6 @@ export default function PredictionForm({
             return;
           }
         }
-
-        // For existing predictions that are NOT locked, clear their lock if they had one
-        const unlockedExistingEventIds = new Set(
-          existingRows.filter((row) => !row.is_locked).map((row) => row.event_id),
-        );
-        
-        for (const eventId of unlockedExistingEventIds) {
-          const existingPrediction = existingPredictions.find(
-            (p) => p.event_id === eventId,
-          );
-          if (existingPrediction?.is_locked) {
-            const { error: upsertError } = await supabase
-              .from("predictions")
-              .upsert(
-                [
-                  {
-                    user_id: userId,
-                    event_id: eventId,
-                    selected_option: existingPrediction.selected_option,
-                    is_locked: false,
-                  },
-                ],
-                { onConflict: "user_id,event_id" },
-              );
-
-            if (upsertError) {
-              setError(upsertError.message);
-              return;
-            }
-          }
-        }
-      }
-
-      if (deletions.length > 0) {
-        const { error: deleteError } = await supabase
-          .from("predictions")
-          .delete()
-          .eq("user_id", userId)
-          .in("event_id", deletions);
-
-        if (deleteError) {
-          setError(deleteError.message);
-          return;
-        }
       }
 
       const deletedEventIds = new Set(deletions);
@@ -417,7 +372,7 @@ export default function PredictionForm({
   if (loadError) {
     return (
       <p role="alert" className="text-sm text-red-400">
-        Failed to load events: {loadError}
+        Failed to load predictions: {loadError}
       </p>
     );
   }
@@ -434,7 +389,9 @@ export default function PredictionForm({
     <div className="space-y-6">
       <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-2xl font-bold text-gray-100">Make your predictions</h1>
-        <CountdownTimer deadline={SUBMISSION_DEADLINE} />
+        <p className="text-sm font-medium text-gray-300">
+          Submissions are {submissionsOpen ? "open" : "closed"}.
+        </p>
       </div>
 
       <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-1">
@@ -449,16 +406,16 @@ export default function PredictionForm({
             <button
               type="button"
               onClick={handleClearAllLocks}
-              disabled={saving}
+              disabled={saving || !submissionsOpen}
               className="text-xs px-3 py-1 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded border border-gray-700 disabled:opacity-50"
             >
-              Clear all locks
+              Clear editable locks
             </button>
           )}
         </div>
         <p className="text-xs text-gray-400">
           Lock up to {MAX_LOCKS} events to earn {LOCK_MULTIPLIER}x the points you win on
-          them. Locks can be changed any time before the deadline.
+          them. Locks can be changed while submissions are open and the event is unlocked.
         </p>
       </div>
 
@@ -505,7 +462,7 @@ export default function PredictionForm({
                   <select
                     id={`event-${event.id}`}
                     value={answers[event.id] ?? ""}
-                    disabled={event.locked || deadlinePassed}
+                    disabled={event.locked || !submissionsOpen}
                     onChange={(e) => handleSelect(event.id, e.target.value)}
                     className="w-full rounded-md border border-gray-700 bg-gray-800 text-gray-100 px-3 py-2 disabled:bg-gray-900 disabled:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-400"
                   >
@@ -528,7 +485,7 @@ export default function PredictionForm({
                       checked={locks[event.id] ?? false}
                       disabled={
                         event.locked ||
-                        deadlinePassed ||
+                        !submissionsOpen ||
                         (!locks[event.id] && lockCount >= MAX_LOCKS)
                       }
                       onChange={() => handleToggleLock(event.id)}
@@ -541,7 +498,7 @@ export default function PredictionForm({
                       type="text"
                       placeholder="Your answer"
                       value={otherText[event.id] ?? ""}
-                      disabled={event.locked || deadlinePassed}
+                      disabled={event.locked || !submissionsOpen}
                       onChange={(e) => handleOtherText(event.id, e.target.value)}
                       className="w-full rounded-md border border-gray-700 bg-gray-800 text-gray-100 px-3 py-2 disabled:bg-gray-900 disabled:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-400"
                     />
@@ -557,7 +514,7 @@ export default function PredictionForm({
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={saving || deadlinePassed}
+          disabled={saving || !submissionsOpen}
           className="bg-cyan-500 text-black px-6 py-3 rounded-md font-medium shadow-lg hover:bg-cyan-400 disabled:opacity-60"
         >
           {saving ? "Saving..." : "Save predictions"}

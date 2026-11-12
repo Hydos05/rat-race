@@ -22,7 +22,7 @@ export default async function HomePage() {
             Make your picks
           </Link>{" "}
           and each event is worth 100 points, split equally among everyone who picks the winner.
-          Submissions close <strong>20 September 2026</strong>.
+          Predictions can be changed while submissions are open and the event is unlocked.
         </p>
         {!isLoggedIn && (
           <div className="flex items-center justify-center gap-3">
@@ -74,8 +74,7 @@ export default async function HomePage() {
           <div className="bg-gray-900 rounded-lg border border-gray-800 p-5">
             <h2 className="font-semibold text-cyan-400">2. Make your picks</h2>
             <p className="text-sm text-gray-300 mt-1">
-              Choose a favourite from the dropdown, or add your own answer for every event before
-              the deadline.
+              Choose a favourite from the dropdown, or add your own answer for each unlocked event.
             </p>
           </div>
           <div className="bg-gray-900 rounded-lg border border-gray-800 p-5">

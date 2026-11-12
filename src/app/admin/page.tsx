@@ -27,6 +27,8 @@ export default function AdminPage() {
   const [adminKey, setAdminKey] = useState("");
   const [unlocked, setUnlocked] = useState(false);
   const [events, setEvents] = useState<RatRaceEvent[]>([]);
+  const [submissionsOpen, setSubmissionsOpen] = useState<boolean | null>(null);
+  const [updatingSubmissions, setUpdatingSubmissions] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -36,13 +38,17 @@ export default function AdminPage() {
   );
 
   async function loadEvents(ignoreRef?: { current: boolean }) {
-    const { data, error: fetchError } = await fetchEvents();
+    const [eventsResult, settingsResult] = await Promise.all([
+      fetchEvents(),
+      createClient().from("competition_settings").select("submissions_open").eq("id", true).single(),
+    ]);
 
     if (ignoreRef?.current) return;
-    if (fetchError) {
-      setError(fetchError.message);
+    if (eventsResult.error || settingsResult.error) {
+      setError(eventsResult.error?.message ?? settingsResult.error?.message ?? "Could not load settings.");
     } else {
-      setEvents((data as RatRaceEvent[]) ?? []);
+      setEvents((eventsResult.data as RatRaceEvent[]) ?? []);
+      setSubmissionsOpen(settingsResult.data.submissions_open);
     }
     setLoading(false);
   }
@@ -92,6 +98,22 @@ export default function AdminPage() {
       setMessage(`${eventToggle.name} ${eventToggle.locked ? "unlocked" : "locked"}.`);
       setLoading(true);
       loadEvents();
+    }
+  }
+
+  async function handleToggleSubmissions() {
+    if (submissionsOpen === null) return;
+    setUpdatingSubmissions(true);
+    try {
+      const success = await callAdminApi("submissions", { submissionsOpen: !submissionsOpen });
+      if (success) {
+        setSubmissionsOpen(!submissionsOpen);
+        setMessage(`Submissions ${submissionsOpen ? "closed" : "opened"}.`);
+      }
+    } catch {
+      setError("Could not update submissions. Please try again.");
+    } finally {
+      setUpdatingSubmissions(false);
     }
   }
 
@@ -203,6 +225,20 @@ export default function AdminPage() {
           {message}
         </p>
       )}
+
+      <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 flex items-center justify-between flex-wrap gap-3">
+        <p className="text-sm text-gray-100">
+          Submissions: {submissionsOpen === null ? "unavailable" : submissionsOpen ? "open" : "closed"}
+        </p>
+        <button
+          type="button"
+          onClick={handleToggleSubmissions}
+          disabled={submissionsOpen === null || updatingSubmissions}
+          className="border border-gray-700 px-4 py-2 rounded-md text-sm font-medium text-gray-100 hover:bg-gray-800 disabled:opacity-50"
+        >
+          {submissionsOpen ? "Close submissions" : "Open submissions"}
+        </button>
+      </div>
 
       {userPredictions && (
         <div className="space-y-3">

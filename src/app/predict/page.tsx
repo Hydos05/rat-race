@@ -24,12 +24,19 @@ export default async function PredictPage() {
     .select("*")
     .eq("user_id", user.id);
 
+  const { data: settings, error: settingsError } = await supabase
+    .from("competition_settings")
+    .select("submissions_open")
+    .eq("id", true)
+    .single();
+
   return (
     <PredictionForm
       userId={user.id}
       events={(events as RatRaceEvent[]) ?? []}
       existingPredictions={(predictions as Prediction[]) ?? []}
-      loadError={eventsError?.message ?? predictionsError?.message ?? null}
+      submissionsOpen={settings?.submissions_open === true}
+      loadError={eventsError?.message ?? predictionsError?.message ?? settingsError?.message ?? null}
     />
   );
 }

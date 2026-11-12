@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { MAX_LOCKS, SUBMISSION_DEADLINE } from "@/lib/constants";
+import { MAX_LOCKS } from "@/lib/constants";
 
 /**
  * Toggles the "Lock" (double points) flag on one of the signed-in user's
  * predictions. Enforces the maximum of `MAX_LOCKS` locks per user and the
- * submission deadline, and returns the user's updated lock count.
+ * submission setting, and returns the user's updated lock count.
  */
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
@@ -28,9 +28,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "You must be signed in." }, { status: 401 });
   }
 
-  if (Date.now() > SUBMISSION_DEADLINE.getTime()) {
+  const { data: settings, error: settingsError } = await supabase
+    .from("competition_settings")
+    .select("submissions_open")
+    .eq("id", true)
+    .single();
+
+  if (settingsError) {
+    return NextResponse.json({ error: settingsError.message }, { status: 500 });
+  }
+
+  if (!settings.submissions_open) {
     return NextResponse.json(
-      { error: "The submission deadline has passed." },
+      { error: "Submissions are closed." },
       { status: 403 },
     );
   }

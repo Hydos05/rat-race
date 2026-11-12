@@ -6,8 +6,8 @@ Participants sign up, predict the winner of 60+ sports events across AFL, Cricke
 Football, College Football, Basketball, Baseball, Ice Hockey, Soccer, Rugby League, Rugby Union,
 Tennis, Golf and more, and compete on a live leaderboard. Each event is worth 100 points, split
 equally among everyone who picks the correct winner. Each player can also nominate up to three
-predictions as **Locks**, which pay double points if they come in. Submissions close
-**20 September 2026**.
+predictions as **Locks**, which pay double points if they come in. Submissions remain open
+until an administrator closes them.
 
 ## Tech stack
 
@@ -21,8 +21,9 @@ predictions as **Locks**, which pay double points if they come in. Submissions c
    [`supabase/migrations/0001_init.sql`](./supabase/migrations/0001_init.sql) via the SQL editor
    (or `supabase db push` if you use the Supabase CLI). This creates the `users`, `events`,
    `predictions` and `leaderboard` tables, Row Level Security policies, and seeds all 62 events.
-   If your database was created before this migration set existed, also run the later migration
-   files in order so existing event options and event names match the current seed list.
+   Run all later migration files in order, including for an existing database. Migration
+   `0005_submission_settings.sql` reopens submissions without changing existing predictions or
+   individual event locks; apply it before deploying the updated app.
 2. **Copy `.env.example` to `.env.local`** and fill in your Supabase project URL, anon key,
    service role key, and a secret `ADMIN_KEY` of your choosing.
 3. **Disable email confirmation** so new sign-ups can log in immediately (recommended, since
@@ -54,6 +55,8 @@ predictions as **Locks**, which pay double points if they come in. Submissions c
 Visit `/admin` and enter the `ADMIN_KEY` you configured. From there you can:
 
 - Lock or unlock individual events to stop/allow further predictions.
+- Open or close submissions for all participants. Individual event locks still apply, and
+  participants with the prediction form already open should refresh to see the current status.
 - Enter the correct answer for an event, which locks it and automatically recalculates the
   leaderboard (100 points split equally among everyone who predicted correctly).
 - Manually trigger a full leaderboard recalculation.
@@ -80,3 +83,5 @@ Visit `/admin` and enter the `ADMIN_KEY` you configured. From there you can:
   Serie A Champion and La Liga Champion.
 - `supabase/migrations/0004_prediction_locks.sql` – adds `predictions.is_locked` and the trigger
   enforcing a maximum of three Locks per user.
+- `supabase/migrations/0005_submission_settings.sql` – reopens submissions and adds an admin-controlled
+  setting enforced by prediction RLS policies.
