@@ -239,13 +239,19 @@ export default function PredictionForm({
     setError(null);
     setMessage(null);
 
+    function showSaveError(detail: string) {
+      const message = `Unable to save all predictions: ${detail}`;
+      setError(message);
+      window.alert(message);
+    }
+
     if (!submissionsOpen) {
-      setError("Submissions are closed.");
+      showSaveError("Submissions are closed.");
       return;
     }
 
     if (countLocks(locksRef.current) > MAX_LOCKS) {
-      setError(`Maximum ${MAX_LOCKS} locks per competition`);
+      showSaveError(`Maximum ${MAX_LOCKS} locks per competition`);
       return;
     }
 
@@ -271,7 +277,7 @@ export default function PredictionForm({
       const finalAnswer = selected === OTHER_OPTION ? otherText[event.id]?.trim() : selected;
 
       if (!finalAnswer) {
-        setError(`Please provide an answer for "${event.name}" or leave it blank.`);
+        showSaveError(`Please provide an answer for "${event.name}" or leave it blank.`);
         return;
       }
 
@@ -284,7 +290,7 @@ export default function PredictionForm({
     }
 
     if (rows.length === 0 && deletions.length === 0) {
-      setError("Please make at least one prediction before submitting.");
+      showSaveError("Please make at least one prediction before submitting.");
       return;
     }
 
@@ -301,11 +307,11 @@ export default function PredictionForm({
           .select("event_id");
 
         if (deleteError) {
-          setError(deleteError.message);
+          showSaveError(deleteError.message);
           return;
         }
         if (deleted.length !== deletions.length) {
-          setError("Some predictions could not be removed. Refresh the page and try again.");
+          showSaveError("Some predictions could not be removed. Refresh the page and try again.");
           return;
         }
         setSavedEventIds((previous) => {
@@ -332,7 +338,7 @@ export default function PredictionForm({
             });
 
           if (upsertError) {
-            setError(upsertError.message);
+            showSaveError(upsertError.message);
             return;
           }
         }
@@ -350,7 +356,7 @@ export default function PredictionForm({
             .upsert([row], { onConflict: "user_id,event_id" });
 
           if (upsertError) {
-            setError(
+            showSaveError(
               upsertError.code === "23514" && upsertError.message.startsWith("Maximum ")
                 ? `Maximum ${MAX_LOCKS} locks per competition`
                 : upsertError.message,
@@ -368,8 +374,9 @@ export default function PredictionForm({
       );
       setSavedEventIds(nextSavedEventIds);
       setMessage("Your predictions have been saved!");
+      window.alert("Your predictions have been saved!");
     } catch {
-      setError("Something went wrong while saving. Please try again.");
+      showSaveError("Something went wrong while saving. Please try again.");
     } finally {
       setSaving(false);
     }
