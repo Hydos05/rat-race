@@ -455,7 +455,11 @@ export default function PredictionForm({
                 <div
                   key={event.id}
                   className={`bg-gray-900 border rounded-lg p-4 space-y-2 ${
-                    locks[event.id] ? "border-yellow-400/70" : "border-gray-800"
+                    !savedEventIds.has(event.id)
+                      ? "border-2 border-red-500"
+                      : locks[event.id]
+                        ? "border-yellow-400/70"
+                        : "border-gray-800"
                   }`}
                 >
                   <label htmlFor={`event-${event.id}`} className="block font-medium text-gray-100">
@@ -468,6 +472,9 @@ export default function PredictionForm({
                     {event.name}
                     {event.locked && (
                       <span className="ml-2 text-xs font-normal text-red-400">(locked)</span>
+                    )}
+                    {!savedEventIds.has(event.id) && (
+                      <span className="ml-2 text-xs font-normal text-red-400">(not saved)</span>
                     )}
                   </label>
                   {event.description && (
