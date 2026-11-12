@@ -6,7 +6,6 @@ interface AdminPredictionRow {
   event_id: string;
   selected_option: string;
   is_locked: boolean;
-  users: { full_name: string | null; email: string } | null;
   events: { name: string; category: string } | null;
 }
 
@@ -22,22 +21,27 @@ export async function POST(request: Request) {
   }
 
   const supabase = createAdminClient();
-  const { data, error } = await supabase
-    .from("predictions")
-    .select(
-      "user_id, event_id, selected_option, is_locked, users ( full_name, email ), events ( name, category )",
-    );
+  const [predictionsResult, usersResult, feesResult] = await Promise.all([
+    supabase.from("predictions").select(
+      "user_id, event_id, selected_option, is_locked, events ( name, category )",
+    ),
+    supabase.from("users").select("id, full_name, email"),
+    supabase.from("entry_fees").select("user_id, paid"),
+  ]);
 
+  const error = predictionsResult.error ?? usersResult.error ?? feesResult.error;
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const rows = (data as unknown as AdminPredictionRow[] | null) ?? [];
+  const rows = (predictionsResult.data as unknown as AdminPredictionRow[] | null) ?? [];
+  const feesByUser = new Map((feesResult.data ?? []).map((fee) => [fee.user_id, fee.paid]));
   const byUser = new Map<
     string,
     {
       userId: string;
       name: string;
+      feesPaid: boolean;
       lockCount: number;
       predictions: {
         eventId: string;
@@ -48,14 +52,21 @@ export async function POST(request: Request) {
     }
   >();
 
-  for (const row of rows) {
-    const name = row.users?.full_name || row.users?.email || "Anonymous";
-    const entry = byUser.get(row.user_id) ?? {
-      userId: row.user_id,
-      name,
+  for (const user of usersResult.data ?? []) {
+    byUser.set(user.id, {
+      userId: user.id,
+      name: user.full_name || user.email || "Anonymous",
+      feesPaid: feesByUser.get(user.id) === true,
       lockCount: 0,
       predictions: [],
-    };
+    });
+  }
+
+  for (const row of rows) {
+    const entry = byUser.get(row.user_id);
+    if (!entry) {
+      return NextResponse.json({ error: "A prediction has no matching user. Reload and try again." }, { status: 500 });
+    }
     entry.predictions.push({
       eventId: row.event_id,
       eventName: row.events?.name ?? "Unknown event",

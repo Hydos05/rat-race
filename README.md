@@ -63,6 +63,9 @@ Visit `/admin` and enter the `ADMIN_KEY` you configured. From there you can:
   leaderboard (100 points split equally among everyone who predicted correctly).
 - Manually trigger a full leaderboard recalculation.
 - Use **View predictions** to review every player's picks, including which ones they locked.
+  Select the plus box beside a player to expand their picks, or the minus box to collapse them.
+- Tick **Fees paid** beside a user to record payment, or untick it to correct a mistake.
+  Payment status is saved across refreshes and is accessible only through the admin API.
 - Follow the **Edit event options** link to `/admin/edit-events`, where you can edit each event's
   dropdown options (one option per line, add/remove/reorder freely), or restore an event's
   original options with **Reset to defaults**. Changes are saved immediately via
@@ -90,3 +93,5 @@ Visit `/admin` and enter the `ADMIN_KEY` you configured. From there you can:
 - `supabase/migrations/0006_restrict_prediction_locks.sql` – clears existing locks once, excludes
   eight events from locks, and recalculates the leaderboard. Run it before deploying the updated app;
   do not rerun it after players have chosen new locks. Players should refresh an already open form.
+- `supabase/migrations/0007_entry_fees.sql` – adds admin-only payment status storage.
+  Apply this migration before deploying the fee checkboxes.

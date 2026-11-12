@@ -9,6 +9,7 @@ import type { RatRaceEvent } from "@/types/database";
 interface AdminUserPredictions {
   userId: string;
   name: string;
+  feesPaid: boolean;
   lockCount: number;
   predictions: {
     eventId: string;
@@ -36,6 +37,7 @@ export default function AdminPage() {
   const [userPredictions, setUserPredictions] = useState<AdminUserPredictions[] | null>(
     null,
   );
+  const [savingFees, setSavingFees] = useState<Set<string>>(new Set());
 
   async function loadEvents(ignoreRef?: { current: boolean }) {
     const [eventsResult, settingsResult] = await Promise.all([
@@ -161,6 +163,27 @@ export default function AdminPage() {
     }
   }
 
+  async function handleFeesPaid(entry: AdminUserPredictions, paid: boolean) {
+    setSavingFees((previous) => new Set(previous).add(entry.userId));
+    try {
+      const success = await callAdminApi("entry-fees", { userId: entry.userId, paid });
+      if (success) {
+        setUserPredictions((previous) => previous?.map((user) =>
+          user.userId === entry.userId ? { ...user, feesPaid: paid } : user,
+        ) ?? null);
+        setMessage(`Payment status saved for ${entry.name}.`);
+      }
+    } catch {
+      setError("Could not save payment status. Please try again.");
+    } finally {
+      setSavingFees((previous) => {
+        const next = new Set(previous);
+        next.delete(entry.userId);
+        return next;
+      });
+    }
+  }
+
   if (!unlocked) {
     return (
       <div className="max-w-sm mx-auto bg-gray-900 border border-gray-800 rounded-lg p-6 space-y-4">
@@ -244,40 +267,63 @@ export default function AdminPage() {
         <div className="space-y-3">
           <h2 className="text-lg font-semibold text-gray-100">Predictions by user</h2>
           {userPredictions.length === 0 ? (
-            <p className="text-sm text-gray-400">No predictions have been made yet.</p>
+            <p className="text-sm text-gray-400">No users have joined yet.</p>
           ) : (
             userPredictions.map((entry) => (
               <div
                 key={entry.userId}
-                className="bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-2"
+                className="bg-gray-900 border border-gray-800 rounded-lg p-4 flex items-start gap-4"
               >
-                <p className="font-medium text-gray-100">
-                  {entry.name}{" "}
-                  <span className="text-xs font-normal text-yellow-300">
-                    <span aria-hidden="true">&#9889;</span> {entry.lockCount} lock
-                    {entry.lockCount === 1 ? "" : "s"}
-                  </span>
-                </p>
-                <ul className="text-sm text-gray-300 space-y-1">
-                  {entry.predictions.map((prediction) => (
-                    <li
-                      key={prediction.eventId}
-                      className={prediction.isLocked ? "text-yellow-300" : undefined}
+                <label className="flex shrink-0 items-center gap-2 text-sm text-gray-200">
+                  <input
+                    type="checkbox"
+                    checked={entry.feesPaid}
+                    disabled={savingFees.has(entry.userId)}
+                    onChange={(event) => handleFeesPaid(entry, event.target.checked)}
+                    aria-label={`Fees paid for ${entry.name}`}
+                    className="h-4 w-4 accent-cyan-400 disabled:opacity-50"
+                  />
+                  {savingFees.has(entry.userId) ? "Saving..." : "Fees paid"}
+                </label>
+                <details className="group min-w-0 flex-1">
+                  <summary className="flex items-center gap-3 cursor-pointer list-none rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-400 [&::-webkit-details-marker]:hidden">
+                    <span
+                      aria-hidden="true"
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-gray-600 text-gray-100"
                     >
-                      {prediction.isLocked && (
-                        <span aria-hidden="true" className="mr-1">
-                          &#9889;
-                        </span>
-                      )}
-                      {prediction.eventName}: {prediction.selectedOption}
-                      {prediction.isLocked && (
-                        <span className="ml-1 text-xs">
-                          (locked &mdash; {LOCK_MULTIPLIER}x points)
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+                      <span className="group-open:hidden">+</span>
+                      <span className="hidden group-open:inline">-</span>
+                    </span>
+                    <span className="font-medium text-gray-100">{entry.name}</span>
+                    <span className="text-xs font-normal text-yellow-300">
+                      <span aria-hidden="true">&#9889;</span> {entry.lockCount} lock
+                      {entry.lockCount === 1 ? "" : "s"}
+                    </span>
+                  </summary>
+                  {entry.predictions.length === 0 && (
+                    <p className="mt-3 text-sm text-gray-400">No predictions submitted yet.</p>
+                  )}
+                  <ul className="mt-3 text-sm text-gray-300 space-y-1">
+                    {entry.predictions.map((prediction) => (
+                      <li
+                        key={prediction.eventId}
+                        className={prediction.isLocked ? "text-yellow-300" : undefined}
+                      >
+                        {prediction.isLocked && (
+                          <span aria-hidden="true" className="mr-1">
+                            &#9889;
+                          </span>
+                        )}
+                        {prediction.eventName}: {prediction.selectedOption}
+                        {prediction.isLocked && (
+                          <span className="ml-1 text-xs">
+                            (locked &mdash; {LOCK_MULTIPLIER}x points)
+                          </span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </details>
               </div>
             ))
           )}
