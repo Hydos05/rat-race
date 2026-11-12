@@ -286,7 +286,7 @@ export default function AdminPage() {
                   {savingFees.has(entry.userId) ? "Saving..." : "Fees paid"}
                 </label>
                 <details className="group min-w-0 flex-1">
-                  <summary className="flex items-center gap-3 cursor-pointer list-none rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-400 [&::-webkit-details-marker]:hidden">
+                  <summary className="flex flex-wrap items-center gap-3 cursor-pointer list-none rounded focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-400 [&::-webkit-details-marker]:hidden">
                     <span
                       aria-hidden="true"
                       className="flex h-6 w-6 shrink-0 items-center justify-center rounded border border-gray-600 text-gray-100"
@@ -295,6 +295,9 @@ export default function AdminPage() {
                       <span className="hidden group-open:inline">-</span>
                     </span>
                     <span className="font-medium text-gray-100">{entry.name}</span>
+                    <span className="text-xs text-gray-300">
+                      {entry.predictions.length} prediction{entry.predictions.length === 1 ? "" : "s"} saved
+                    </span>
                     <span className="text-xs font-normal text-yellow-300">
                       <span aria-hidden="true">&#9889;</span> {entry.lockCount} lock
                       {entry.lockCount === 1 ? "" : "s"}
