@@ -95,3 +95,6 @@ Visit `/admin` and enter the `ADMIN_KEY` you configured. From there you can:
   do not rerun it after players have chosen new locks. Players should refresh an already open form.
 - `supabase/migrations/0007_entry_fees.sql` – adds admin-only payment status storage.
   Apply this migration before deploying the fee checkboxes.
+- `supabase/migrations/0008_fix_lock_upserts.sql` – fixes saving existing locked picks
+  when all three locks are used. Apply in Supabase; it changes only the lock-limit
+  function and preserves all predictions and locks.
