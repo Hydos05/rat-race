@@ -34,16 +34,19 @@ export default function NavBar() {
 
   return (
     <header className="bg-gray-950 border-b border-gray-800">
-      <nav className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+      <nav className="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
         <Link href="/" className="font-bold text-lg tracking-tight text-cyan-400">
           🐀 Rat Race
         </Link>
-        <div className="flex items-center gap-4 text-sm text-gray-100">
+        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-100">
           <Link href="/predict" className="hover:text-cyan-400">
             Predict
           </Link>
           <Link href="/leaderboard" className="hover:text-cyan-400">
             Leaderboard
+          </Link>
+          <Link href="/picks" className="hover:text-cyan-400">
+            Everyone&apos;s picks
           </Link>
           {!loading && email && (
             <button

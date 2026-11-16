@@ -10,6 +10,8 @@ predictions as **Locks**, which pay double points if they come in. Submissions r
 until an administrator closes them. Locks are unavailable for AFC Champion, NFC Champion,
 Super Bowl winner, NFL MVP, Offensive Player of the Year, Defensive Player of the Year,
 College Football Playoff Champion and Heisman Trophy. Predictions for these events are still allowed.
+Signed-in participants can see everyone's saved picks, grouped by event category, on the
+**Everyone's picks** page. Picks are visible while submissions remain open.
 
 ## Tech stack
 
