@@ -54,6 +54,16 @@ Signed-in participants can see everyone's saved picks, grouped by event category
    `NEXT_PUBLIC_` since they are server-only secrets used by the `/admin` API routes.
 3. Deploy. Vercel will rebuild automatically on every push.
 
+## Password recovery
+
+Add `https://<your-app-domain>/auth/reset-password` to Supabase **Authentication → URL
+Configuration → Redirect URLs** for each deployed domain (and
+`http://localhost:3000/auth/reset-password` for local development). Ensure Supabase email
+delivery is configured and the reset email template uses `{{ .ConfirmationURL }}`. The user
+must open the email link in the same browser and device used to request it, because the
+recovery flow uses PKCE. The built-in Supabase email service has delivery and rate limits;
+configure custom SMTP for production if needed.
+
 ## Admin panel
 
 Visit `/admin` and enter the `ADMIN_KEY` you configured. From there you can:
