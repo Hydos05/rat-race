@@ -36,6 +36,7 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [answerDrafts, setAnswerDrafts] = useState<Record<string, string>>({});
+  const [startDrafts, setStartDrafts] = useState<Record<string, string>>({});
   const [userPredictions, setUserPredictions] = useState<AdminUserPredictions[] | null>(
     null,
   );
@@ -102,6 +103,28 @@ export default function AdminPage() {
       setMessage(`${eventToggle.name} ${eventToggle.locked ? "unlocked" : "locked"}.`);
       setLoading(true);
       loadEvents();
+    }
+  }
+
+  async function handleSaveStart(event: RatRaceEvent) {
+    const value = startDrafts[event.id] ?? (event.starts_at ? new Date(event.starts_at).toISOString().slice(0, 16) : "");
+    const date = value ? new Date(`${value}:00Z`) : null;
+    if (date && Number.isNaN(date.getTime())) {
+      setError("Enter a valid UTC start time.");
+      return;
+    }
+    try {
+      const success = await callAdminApi("event-start", {
+        eventId: event.id,
+        startsAt: date?.toISOString() ?? null,
+      });
+      if (success) {
+        setMessage(`Start time saved for ${event.name}.`);
+        setLoading(true);
+        loadEvents();
+      }
+    } catch {
+      setError("Could not save start time. Please try again.");
     }
   }
 
@@ -358,6 +381,22 @@ export default function AdminPage() {
                     ? `Answer: ${event.correct_answer}`
                     : "No answer recorded"}
                 </p>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label htmlFor={`start-${event.id}`} className="text-xs text-gray-300">
+                  Event start (UTC)
+                </label>
+                <input
+                  id={`start-${event.id}`}
+                  type="datetime-local"
+                  value={startDrafts[event.id] ?? (event.starts_at ? new Date(event.starts_at).toISOString().slice(0, 16) : "")}
+                  onChange={(e) => setStartDrafts((prev) => ({ ...prev, [event.id]: e.target.value }))}
+                  className="rounded-md border border-gray-700 bg-gray-800 text-gray-100 px-3 py-2 text-sm"
+                />
+                <button type="button" onClick={() => handleSaveStart(event)}
+                  className="border border-gray-700 px-3 py-2 rounded-md text-sm text-gray-100 hover:bg-gray-800">
+                  Save start time
+                </button>
               </div>
               <input
                 type="text"

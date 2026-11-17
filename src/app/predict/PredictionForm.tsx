@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { LOCK_MULTIPLIER, MAX_LOCKS } from "@/lib/constants";
+import { LOCK_MULTIPLIER, MAX_LOCKS, MAX_WILDCARDS } from "@/lib/constants";
 import { OTHER_OPTION, cleanOptions } from "@/lib/eventOptions";
 import type { Prediction, RatRaceEvent } from "@/types/database";
 
@@ -11,6 +11,7 @@ interface PredictionFormProps {
   events: RatRaceEvent[];
   existingPredictions: Prediction[];
   submissionsOpen: boolean;
+  wildcardUses: number;
   loadError: string | null;
 }
 
@@ -82,6 +83,7 @@ export default function PredictionForm({
   events,
   existingPredictions,
   submissionsOpen,
+  wildcardUses,
   loadError,
 }: PredictionFormProps) {
   const cleanedEvents = useMemo(() => withCleanOptions(events), [events]);
@@ -100,6 +102,10 @@ export default function PredictionForm({
     () => new Set(existingPredictions.map((prediction) => prediction.event_id)),
   );
   const [saving, setSaving] = useState(false);
+  const [wildcardsRemaining, setWildcardsRemaining] = useState(MAX_WILDCARDS - wildcardUses);
+  const [savedAnswers, setSavedAnswers] = useState<Answers>(() =>
+    Object.fromEntries(existingPredictions.map((prediction) => [prediction.event_id, prediction.selected_option])),
+  );
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -230,6 +236,42 @@ export default function PredictionForm({
       setMessage("Locks on editable events cleared and saved!");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to clear locks");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleWildcard(event: RatRaceEvent) {
+    const selected = answers[event.id];
+    const finalAnswer = selected === OTHER_OPTION ? otherText[event.id]?.trim() : selected?.trim();
+    if (!finalAnswer) {
+      setError("Choose a new selection before using a wildcard.");
+      return;
+    }
+    if (finalAnswer.toLowerCase() === savedAnswers[event.id]?.trim().toLowerCase()) {
+      setError("Choose a different selection before using a wildcard.");
+      return;
+    }
+    if (!window.confirm(`Use one wildcard to change "${event.name}" to "${finalAnswer}"? This cannot be refunded.`)) return;
+
+    setError(null);
+    setMessage(null);
+    setSaving(true);
+    try {
+      const { data, error: wildcardError } = await createClient().rpc("use_wildcard", {
+        p_event_id: event.id,
+        p_expected_option: savedAnswers[event.id],
+        p_selected_option: finalAnswer,
+      });
+      if (wildcardError) {
+        setError(wildcardError.message);
+        return;
+      }
+      setWildcardsRemaining(data);
+      setSavedAnswers((previous) => ({ ...previous, [event.id]: finalAnswer }));
+      setMessage(`Wildcard used on "${event.name}". ${data} remaining.`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not use wildcard. Refresh to check your saved pick.");
     } finally {
       setSaving(false);
     }
@@ -408,6 +450,16 @@ export default function PredictionForm({
       </div>
 
       <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-1">
+        <p className="text-sm font-medium text-gray-100">
+          Wildcards remaining: {wildcardsRemaining} / {MAX_WILDCARDS}
+        </p>
+        <p className="text-xs text-gray-400">
+          After submissions close, use a wildcard to change a saved selection before its event starts.
+          Each change uses one wildcard. No refunds. Existing Locks remain unchanged.
+        </p>
+      </div>
+
+      <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 space-y-1">
         <div className="flex items-center justify-between">
           <p className="text-sm font-medium text-gray-100">
             <span aria-hidden="true">&#9889;</span> Locks used:{" "}
@@ -483,11 +535,13 @@ export default function PredictionForm({
                   <select
                     id={`event-${event.id}`}
                     value={answers[event.id] ?? ""}
-                    disabled={event.locked || !submissionsOpen}
+                    disabled={saving || event.locked || (!submissionsOpen && (
+                      !savedEventIds.has(event.id) || !event.starts_at || !!event.correct_answer || wildcardsRemaining <= 0
+                    ))}
                     onChange={(e) => handleSelect(event.id, e.target.value)}
                     className="w-full rounded-md border border-gray-700 bg-gray-800 text-gray-100 px-3 py-2 disabled:bg-gray-900 disabled:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-400"
                   >
-                    <option value="">Select an option&hellip;</option>
+                    <option value="" disabled={!submissionsOpen}>Select an option&hellip;</option>
                     {event.options.map((option) => (
                       <option key={option} value={option}>
                         {option}
@@ -524,10 +578,29 @@ export default function PredictionForm({
                       type="text"
                       placeholder="Your answer"
                       value={otherText[event.id] ?? ""}
-                      disabled={event.locked || !submissionsOpen}
+                      disabled={saving || event.locked || (!submissionsOpen && (
+                        !savedEventIds.has(event.id) || !event.starts_at || !!event.correct_answer || wildcardsRemaining <= 0
+                      ))}
                       onChange={(e) => handleOtherText(event.id, e.target.value)}
                       className="w-full rounded-md border border-gray-700 bg-gray-800 text-gray-100 px-3 py-2 disabled:bg-gray-900 disabled:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-400"
                     />
+                  )}
+                  {!submissionsOpen && savedEventIds.has(event.id) && (
+                    <>
+                      <p className="text-xs text-gray-400">
+                        {event.starts_at
+                          ? `Wildcard cutoff: ${new Date(event.starts_at).toISOString().replace("T", " ").slice(0, 16)} UTC`
+                          : "Wildcard unavailable until the event start time is set."}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => handleWildcard(event)}
+                        disabled={saving || event.locked || !!event.correct_answer || !event.starts_at || wildcardsRemaining <= 0}
+                        className="rounded border border-cyan-500 px-3 py-2 text-sm text-cyan-300 hover:bg-gray-800 disabled:opacity-50"
+                      >
+                        Use wildcard
+                      </button>
+                    </>
                   )}
                 </div>
               ))}
@@ -536,7 +609,7 @@ export default function PredictionForm({
         ))}
       </div>
 
-      <div className="sticky bottom-4 flex justify-center">
+      {submissionsOpen && <div className="sticky bottom-4 flex justify-center">
         <button
           type="button"
           onClick={handleSubmit}
@@ -545,7 +618,7 @@ export default function PredictionForm({
         >
           {saving ? "Saving..." : "Save predictions"}
         </button>
-      </div>
+      </div>}
     </div>
   );
 }
