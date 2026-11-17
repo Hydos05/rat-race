@@ -1,4 +1,5 @@
 export const POINTS_PER_EVENT = 100;
+export const MAX_WILDCARDS = 2;
 
 /**
  * Maximum number of predictions a user may nominate as a "Lock" (a

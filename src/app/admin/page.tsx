@@ -36,6 +36,7 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [answerDrafts, setAnswerDrafts] = useState<Record<string, string>>({});
+  const [savingWildcards, setSavingWildcards] = useState<Set<string>>(new Set());
   const [userPredictions, setUserPredictions] = useState<AdminUserPredictions[] | null>(
     null,
   );
@@ -102,6 +103,30 @@ export default function AdminPage() {
       setMessage(`${eventToggle.name} ${eventToggle.locked ? "unlocked" : "locked"}.`);
       setLoading(true);
       loadEvents();
+    }
+  }
+
+  async function handleToggleWildcards(event: RatRaceEvent) {
+    setSavingWildcards((previous) => new Set(previous).add(event.id));
+    try {
+      const success = await callAdminApi("wildcards", {
+        eventId: event.id,
+        wildcardsAllowed: !event.wildcards_allowed,
+      });
+      if (success) {
+        setEvents((previous) => previous.map((item) =>
+          item.id === event.id ? { ...item, wildcards_allowed: !event.wildcards_allowed } : item,
+        ));
+        setMessage(`Wildcards ${event.wildcards_allowed ? "disallowed" : "allowed"} for ${event.name}.`);
+      }
+    } catch {
+      setError("Could not update wildcard availability. Please try again.");
+    } finally {
+      setSavingWildcards((previous) => {
+        const next = new Set(previous);
+        next.delete(event.id);
+        return next;
+      });
     }
   }
 
@@ -345,6 +370,10 @@ export default function AdminPage() {
         <p className="text-sm text-gray-400">Loading events&hellip;</p>
       ) : (
         <div className="space-y-3">
+          <p className="text-sm text-gray-300">
+            Enable wildcards only for events that have not started. Disable them when an event starts;
+            this is not automatic. Locked or scored events remain ineligible.
+          </p>
           {events.map((event) => (
             <div
               key={event.id}
@@ -359,6 +388,17 @@ export default function AdminPage() {
                     : "No answer recorded"}
                 </p>
               </div>
+              <label className="flex items-center gap-2 text-sm text-gray-200">
+                <input
+                  type="checkbox"
+                  checked={event.wildcards_allowed}
+                  disabled={savingWildcards.has(event.id)}
+                  onChange={() => handleToggleWildcards(event)}
+                  aria-label={`Allow wildcards for ${event.name}`}
+                  className="h-4 w-4 accent-cyan-400 disabled:opacity-50"
+                />
+                Allow wildcards
+              </label>
               <input
                 type="text"
                 placeholder="Correct answer"

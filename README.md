@@ -10,6 +10,11 @@ predictions as **Locks**, which pay double points if they come in. Submissions r
 until an administrator closes them. Locks are unavailable for AFC Champion, NFC Champion,
 Super Bowl winner, NFL MVP, Offensive Player of the Year, Defensive Player of the Year,
 College Football Playoff Champion and Heisman Trophy. Predictions for these events are still allowed.
+Each player also receives two **Wildcards**. After submissions close, a wildcard changes one
+previously saved selection before its event starts; each change consumes one wildcard, with no
+refunds. Locked picks cannot be changed with a wildcard. An administrator must enable wildcards
+for the event, the event must not be individually locked or scored, and the player must have a
+saved prediction.
 Signed-in participants can see everyone's saved picks, grouped by event category, on the
 **Everyone's picks** page. Picks are visible while submissions remain open.
 Use the slider at the bottom of the screen to scroll across the picks table.
@@ -36,6 +41,8 @@ and are sorted by actual points, then total possible points.
    Run all later migration files in order, including for an existing database. Migration
    `0005_submission_settings.sql` reopens submissions without changing existing predictions or
    individual event locks; apply it before deploying the updated app.
+   Migrations `0009_wildcards.sql` and `0010_manual_wildcards.sql` preserve the current submission
+   setting and existing picks; apply both before deploying the wildcard feature.
 2. **Copy `.env.example` to `.env.local`** and fill in your Supabase project URL, anon key,
    service role key, and a secret `ADMIN_KEY` of your choosing.
 3. **Disable email confirmation** so new sign-ups can log in immediately (recommended, since
@@ -77,6 +84,9 @@ configure custom SMTP for production if needed.
 Visit `/admin` and enter the `ADMIN_KEY` you configured. From there you can:
 
 - Lock or unlock individual events to stop/allow further predictions.
+- Enable **Allow wildcards** for each event that has not started. Wildcards default to disabled.
+  Disable the toggle when an event starts: there is no automatic cutoff, so timely administration
+  is essential. Locked or scored events remain ineligible even if the toggle is enabled.
 - Open or close submissions for all participants. Individual event locks still apply, and
   participants with the prediction form already open should refresh to see the current status.
 - Enter the correct answer for an event, which locks it and automatically recalculates the
@@ -122,3 +132,8 @@ Visit `/admin` and enter the `ADMIN_KEY` you configured. From there you can:
 - `supabase/migrations/0008_fix_lock_upserts.sql` – fixes saving existing locked picks
   when all three locks are used. Apply in Supabase; it changes only the lock-limit
   function and preserves all predictions and locks.
+- `supabase/migrations/0009_wildcards.sql` – adds atomic, auditable wildcard changes
+  without reopening submissions.
+- `supabase/migrations/0010_manual_wildcards.sql` – replaces the start-time cutoff with
+  a manual event toggle and prevents wildcards on locked picks. The unused start-time column
+  is retained for existing installations.

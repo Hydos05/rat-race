@@ -33,6 +33,7 @@ export interface RatRaceEvent {
   created_at: string;
   locked: boolean;
   lock_eligible: boolean;
+  wildcards_allowed: boolean;
 }
 
 export interface Prediction {

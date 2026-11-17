@@ -30,13 +30,19 @@ export default async function PredictPage() {
     .eq("id", true)
     .single();
 
+  const { count: wildcardUses, error: wildcardError } = await supabase
+    .from("wildcard_uses")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+
   return (
     <PredictionForm
       userId={user.id}
       events={(events as RatRaceEvent[]) ?? []}
       existingPredictions={(predictions as Prediction[]) ?? []}
       submissionsOpen={settings?.submissions_open === true}
-      loadError={eventsError?.message ?? predictionsError?.message ?? settingsError?.message ?? null}
+      wildcardUses={wildcardUses ?? 0}
+      loadError={eventsError?.message ?? predictionsError?.message ?? settingsError?.message ?? wildcardError?.message ?? null}
     />
   );
 }
