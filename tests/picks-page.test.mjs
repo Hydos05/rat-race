@@ -132,10 +132,11 @@ test("shows rounded potential points by event and pick, with locks doubled", asy
   assert.equal((aflRow.match(/100 points if correct/g) ?? []).length, 1);
   assert.match(aflRow, /aria-label="No saved pick"/);
   assert.equal((soccerRow.match(/100 points if correct/g) ?? []).length, 1);
-  assert.match(aflRow, /<td class="[^"]*bg-red-950"[^>]*>.*?17 points if correct/);
-  assert.match(aflRow, /<td class="[^"]*bg-orange-950"[^>]*>.*?33 points if correct \(locked\)/);
-  assert.match(aflRow, /<td class="[^"]*bg-teal-950"[^>]*>.*?100 points if correct/);
-  assert.match(aflRow, /<td class="px-4 py-3 text-gray-300 "><span aria-label="No saved pick"/);
+  const cells = [...aflRow.matchAll(/<td[^>]*>.*?<\/td>/g)].map(([cell]) => cell);
+  assert.match(cells[0], /background-color:hsl\(72 85% 72%\).*33 points if correct \(locked\)/);
+  assert.match(cells[1], /background-color:hsl\(24 85% 72%\).*17 points if correct/);
+  assert.match(cells[6], /background-color:hsl\(240 85% 85%\).*100 points if correct/);
+  assert.doesNotMatch(cells[7], /background-color/);
   assert.match(html, /Pick value colour key/);
   assert.match(html, /leaderboard uses two decimal places/);
 });
@@ -158,10 +159,40 @@ test("colours rounded values including locked picks above 100", async () => {
   const html = renderToStaticMarkup(await page());
   const row = html.match(/<tr[^>]*><th scope="row"[^>]*>Final<\/th>.*?<\/tr>/)?.[0];
   assert.ok(row);
-  assert.match(row, /<td class="[^"]*bg-teal-950"[^>]*>.*?200 points if correct \(locked\)/);
-  assert.equal((row.match(/bg-yellow-950/g) ?? []).length, 2);
-  assert.match(row, /<td class="[^"]*bg-lime-950"[^>]*>.*?67 points if correct \(locked\)/);
-  assert.equal((row.match(/bg-orange-950/g) ?? []).length, 2);
+  const cells = [...row.matchAll(/<td[^>]*>.*?<\/td>/g)].map(([cell]) => cell);
+  assert.match(cells[0], /background-color:hsl\(240 85% 85%\).*200 points if correct \(locked\)/);
+  assert.match(cells[1], /background-color:hsl\(120 85% 72%\).*50 points if correct/);
+  assert.match(cells[2], /background-color:hsl\(120 85% 72%\).*50 points if correct/);
+  assert.match(cells[3], /background-color:hsl\(144 85% 85%\).*67 points if correct \(locked\)/);
+  assert.match(cells[4], /background-color:hsl\(72 85% 72%\).*33 points if correct/);
+  assert.match(cells[5], /background-color:hsl\(72 85% 72%\).*33 points if correct/);
+});
+
+test("places 9 and 10 point picks in different ten-point bands", async () => {
+  const users = Array.from({ length: 21 }, (_, index) => ({
+    id: `u${index}`,
+    full_name: `User ${String(index).padStart(2, "0")}`,
+  }));
+  const { page } = makePage({
+    tableData: {
+      events: [{ id: "event", name: "Final", category: "AFL" }],
+      users,
+      predictions: users.map((user, index) => ({
+        user_id: user.id,
+        event_id: "event",
+        selected_option: index < 11 ? "Eleven" : "Ten",
+        is_locked: false,
+      })),
+    },
+  });
+  const html = renderToStaticMarkup(await page());
+  const row = html.match(/<tr[^>]*><th scope="row"[^>]*>Final<\/th>.*?<\/tr>/)?.[0];
+  assert.ok(row);
+  const cells = [...row.matchAll(/<td[^>]*>.*?<\/td>/g)].map(([cell]) => cell);
+  assert.match(cells[0], /background-color:hsl\(0 85% 85%\).*9 points if correct/);
+  assert.match(cells[11], /background-color:hsl\(24 85% 72%\).*10 points if correct/);
+  assert.match(html, />100\+<\/li>/);
+  assert.doesNotMatch(html, />110-119<\/li>/);
 });
 
 test("leaderboard scoring retains two-decimal shares and the lock multiplier", () => {

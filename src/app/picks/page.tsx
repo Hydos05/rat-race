@@ -9,14 +9,14 @@ type Event = { id: string; name: string; category: string };
 type User = { id: string; full_name: string | null };
 type Pick = { user_id: string; event_id: string; selected_option: string; is_locked: boolean };
 
-const pointBands = [
-  { label: "0-19", max: 19, className: "bg-red-950" },
-  { label: "20-39", max: 39, className: "bg-orange-950" },
-  { label: "40-59", max: 59, className: "bg-yellow-950" },
-  { label: "60-79", max: 79, className: "bg-lime-950" },
-  { label: "80-99", max: 99, className: "bg-green-950" },
-  { label: "100+", max: Infinity, className: "bg-teal-950" },
-];
+const maxBand = 10;
+const pointBands = Array.from({ length: maxBand + 1 }, (_, index) => {
+  const start = index * 10;
+  return {
+    label: index === maxBand ? `${start}+` : `${start}-${start + 9}`,
+    colour: `hsl(${Math.round((index * 240) / maxBand)} 85% ${index % 2 === 0 ? 85 : 72}%)`,
+  };
+});
 
 export default async function PicksPage() {
   const auth = await createClient();
@@ -96,10 +96,10 @@ export default async function PicksPage() {
       {events.length > 0 && users.length > 0 && (
         <div className="space-y-2 text-sm text-gray-200">
           <p>Pick value colour key (rounded points if correct):</p>
-          <ul className="flex flex-wrap gap-2">
+          <ul className="grid grid-cols-3 gap-1 sm:grid-cols-6 lg:grid-cols-7">
             {pointBands.map((band) => (
-              <li key={band.label} className={`${band.className} rounded border border-gray-700 px-2 py-1`}>
-                {band.label} points
+              <li key={band.label} style={{ backgroundColor: band.colour }} className="rounded px-2 py-1 text-center text-gray-950">
+                {band.label}
               </li>
             ))}
           </ul>
@@ -139,13 +139,17 @@ export default async function PicksPage() {
                       const roundedPoints = pick ? Math.round(pick.points) : null;
                       const band = roundedPoints === null
                         ? null
-                        : pointBands.find((item) => roundedPoints <= item.max);
+                        : pointBands[Math.min(Math.floor(roundedPoints / 10), maxBand)];
                       return (
-                        <td key={participant.id} className={`px-4 py-3 text-gray-300 ${band?.className ?? ""}`}>
+                        <td
+                          key={participant.id}
+                          style={band ? { backgroundColor: band.colour } : undefined}
+                          className={`px-4 py-3 ${band ? "text-gray-950" : "text-gray-300"}`}
+                        >
                           {pick ? (
                             <>
                               <span>{pick.option}</span>
-                              <span className="block text-xs text-gray-400">
+                              <span className="block text-xs">
                                 {roundedPoints} points if correct{pick.locked ? " (locked)" : ""}
                               </span>
                             </>
