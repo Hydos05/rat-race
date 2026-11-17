@@ -12,7 +12,11 @@ const requireDependency = createRequire(import.meta.url);
 function loadTypeScript(file, dependencies = {}) {
   const source = fs.readFileSync(path.join(process.cwd(), file), "utf8");
   const compiled = ts.transpileModule(source, {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
+    compilerOptions: {
+      module: ts.ModuleKind.CommonJS,
+      jsx: ts.JsxEmit.ReactJSX,
+      target: ts.ScriptTarget.ES2020,
+    },
   }).outputText;
   const compiledModule = { exports: {} };
   vm.runInNewContext(compiled, {
@@ -25,14 +29,17 @@ function loadTypeScript(file, dependencies = {}) {
 }
 
 const { fetchAllRows } = loadTypeScript("src/lib/supabase/fetchAllRows.ts");
+const scoring = loadTypeScript("src/lib/scoring.ts", {
+  "@/lib/constants": { POINTS_PER_EVENT: 100, LOCK_MULTIPLIER: 2 },
+});
 
-function makePage({ signedIn = true, failTable, cap = 500 } = {}) {
+function makePage({ signedIn = true, failTable, cap = 500, tableData } = {}) {
   const events = Array.from({ length: 1001 }, (_, index) => ({
     id: `e${index}`,
     name: `Event ${index}`,
     category: index < 501 ? "AFL" : "Soccer",
   }));
-  const tables = {
+  const tables = tableData ?? {
     events,
     users: [{ id: "u1", full_name: "Zoe" }, { id: "u2", full_name: "Alex" }],
     predictions: events.map((event) => ({
@@ -66,6 +73,7 @@ function makePage({ signedIn = true, failTable, cap = 500 } = {}) {
     },
     "@/lib/supabase/admin": { createAdminClient: () => { adminCalls++; return admin; } },
     "@/lib/supabase/fetchAllRows": { fetchAllRows },
+    "@/lib/scoring": scoring,
     "./PicksTableScroller": { default: ({ children }) => children },
   }).default;
   return { page, selections, getAdminCalls: () => adminCalls };
@@ -86,6 +94,88 @@ test("renders all paginated picks in grouped event rows and sorted user columns"
   assert.match(html, /Pick e1000/);
   assert.match(html, /aria-label="No saved pick"/);
   assert.ok(selections.every(([, columns]) => !columns.includes("email")));
+});
+
+test("shows rounded potential points by event and pick, with locks doubled", async () => {
+  const users = Array.from({ length: 8 }, (_, index) => ({
+    id: `u${index}`,
+    full_name: `User ${index}`,
+  }));
+  const predictions = [
+    ...users.slice(0, 6).map((user, index) => ({
+      user_id: user.id,
+      event_id: "afl",
+      selected_option: index === 1 ? "  EAGLES  " : "Eagles",
+      is_locked: index === 0,
+    })),
+    { user_id: "u6", event_id: "afl", selected_option: "Dockers", is_locked: false },
+    { user_id: "u0", event_id: "soccer", selected_option: "Eagles", is_locked: false },
+  ];
+  const { page } = makePage({
+    cap: 3,
+    tableData: {
+      events: [
+        { id: "afl", name: "AFL premier", category: "AFL" },
+        { id: "soccer", name: "Soccer champion", category: "Soccer" },
+      ],
+      users,
+      predictions,
+    },
+  });
+  const html = renderToStaticMarkup(await page());
+  const aflRow = html.match(/<tr[^>]*><th scope="row"[^>]*>AFL premier<\/th>.*?<\/tr>/)?.[0];
+  const soccerRow = html.match(/<tr[^>]*><th scope="row"[^>]*>Soccer champion<\/th>.*?<\/tr>/)?.[0];
+  assert.ok(aflRow);
+  assert.ok(soccerRow);
+  assert.equal((aflRow.match(/17 points if correct/g) ?? []).length, 5);
+  assert.equal((aflRow.match(/33 points if correct \(locked\)/g) ?? []).length, 1);
+  assert.equal((aflRow.match(/100 points if correct/g) ?? []).length, 1);
+  assert.match(aflRow, /aria-label="No saved pick"/);
+  assert.equal((soccerRow.match(/100 points if correct/g) ?? []).length, 1);
+  assert.match(aflRow, /<td class="[^"]*bg-red-950"[^>]*>.*?17 points if correct/);
+  assert.match(aflRow, /<td class="[^"]*bg-orange-950"[^>]*>.*?33 points if correct \(locked\)/);
+  assert.match(aflRow, /<td class="[^"]*bg-teal-950"[^>]*>.*?100 points if correct/);
+  assert.match(aflRow, /<td class="px-4 py-3 text-gray-300 "><span aria-label="No saved pick"/);
+  assert.match(html, /Pick value colour key/);
+  assert.match(html, /leaderboard uses two decimal places/);
+});
+
+test("colours rounded values including locked picks above 100", async () => {
+  const { page } = makePage({
+    tableData: {
+      events: [{ id: "event", name: "Final", category: "AFL" }],
+      users: Array.from({ length: 6 }, (_, index) => ({ id: `u${index}`, full_name: `User ${index}` })),
+      predictions: [
+        { user_id: "u0", event_id: "event", selected_option: "Solo", is_locked: true },
+        { user_id: "u1", event_id: "event", selected_option: "Pair", is_locked: false },
+        { user_id: "u2", event_id: "event", selected_option: "Pair", is_locked: false },
+        ...[3, 4, 5].map((index) => ({
+          user_id: `u${index}`, event_id: "event", selected_option: "Trio", is_locked: index === 3,
+        })),
+      ],
+    },
+  });
+  const html = renderToStaticMarkup(await page());
+  const row = html.match(/<tr[^>]*><th scope="row"[^>]*>Final<\/th>.*?<\/tr>/)?.[0];
+  assert.ok(row);
+  assert.match(row, /<td class="[^"]*bg-teal-950"[^>]*>.*?200 points if correct \(locked\)/);
+  assert.equal((row.match(/bg-yellow-950/g) ?? []).length, 2);
+  assert.match(row, /<td class="[^"]*bg-lime-950"[^>]*>.*?67 points if correct \(locked\)/);
+  assert.equal((row.match(/bg-orange-950/g) ?? []).length, 2);
+});
+
+test("leaderboard scoring retains two-decimal shares and the lock multiplier", () => {
+  const predictions = Array.from({ length: 6 }, (_, index) => ({
+    user_id: `u${index}`,
+    selected_option: index === 1 ? "  EAGLES " : "Eagles",
+    is_locked: index === 0,
+  }));
+  predictions.push({ user_id: "u6", selected_option: "Dockers", is_locked: false });
+  const scores = scoring.calculateEventPoints(predictions, "eagles");
+  assert.equal(scores.length, 6);
+  assert.equal(scores[0].points, 33.33);
+  assert.equal(scores[1].points, 16.67);
+  assert.equal(scoring.calculateEventPoints(predictions, null).length, 0);
 });
 
 test("reports a database failure instead of displaying incomplete picks", async () => {

@@ -13,6 +13,9 @@ College Football Playoff Champion and Heisman Trophy. Predictions for these even
 Signed-in participants can see everyone's saved picks, grouped by event category, on the
 **Everyone's picks** page. Picks are visible while submissions remain open.
 Use the slider at the bottom of the screen to scroll across the picks table.
+Each saved pick shows its potential points if correct, including locks, rounded to whole points;
+the leaderboard uses two decimal places. Potential values change when participants change picks.
+Cell colours indicate the rounded potential value; the colour key appears above the table.
 
 ## Tech stack
 

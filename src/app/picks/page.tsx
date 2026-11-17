@@ -2,11 +2,21 @@ import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
 import { createClient } from "@/lib/supabase/server";
+import { calculatePointsPerPrediction, normaliseAnswer } from "@/lib/scoring";
 import PicksTableScroller from "./PicksTableScroller";
 
 type Event = { id: string; name: string; category: string };
 type User = { id: string; full_name: string | null };
-type Pick = { user_id: string; event_id: string; selected_option: string };
+type Pick = { user_id: string; event_id: string; selected_option: string; is_locked: boolean };
+
+const pointBands = [
+  { label: "0-19", max: 19, className: "bg-red-950" },
+  { label: "20-39", max: 39, className: "bg-orange-950" },
+  { label: "40-59", max: 59, className: "bg-yellow-950" },
+  { label: "60-79", max: 79, className: "bg-lime-950" },
+  { label: "80-99", max: 99, className: "bg-green-950" },
+  { label: "100+", max: Infinity, className: "bg-teal-950" },
+];
 
 export default async function PicksPage() {
   const auth = await createClient();
@@ -28,7 +38,7 @@ export default async function PicksPage() {
         supabase.from("users").select("id, full_name").order("id").range(from, to),
       ),
       fetchAllRows<Pick>((from, to) =>
-        supabase.from("predictions").select("user_id, event_id, selected_option")
+        supabase.from("predictions").select("user_id, event_id, selected_option, is_locked")
           .order("id").range(from, to),
       ),
     ]);
@@ -49,11 +59,28 @@ export default async function PicksPage() {
     group.push(event);
     categories.set(event.category, group);
   }
-  const picksByEvent = new Map<string, Map<string, string>>();
+  const groupedPicks = new Map<string, Map<string, Pick[]>>();
   for (const pick of picks) {
-    const eventPicks = picksByEvent.get(pick.event_id) ?? new Map<string, string>();
-    eventPicks.set(pick.user_id, pick.selected_option);
-    picksByEvent.set(pick.event_id, eventPicks);
+    const eventPicks = groupedPicks.get(pick.event_id) ?? new Map<string, Pick[]>();
+    const answer = normaliseAnswer(pick.selected_option);
+    const matchingPicks = eventPicks.get(answer) ?? [];
+    matchingPicks.push(pick);
+    eventPicks.set(answer, matchingPicks);
+    groupedPicks.set(pick.event_id, eventPicks);
+  }
+  const picksByEvent = new Map<string, Map<string, { option: string; points: number; locked: boolean }>>();
+  for (const [eventId, groups] of groupedPicks) {
+    const eventPicks = new Map<string, { option: string; points: number; locked: boolean }>();
+    for (const group of groups.values()) {
+      for (const pick of group) {
+        eventPicks.set(pick.user_id, {
+          option: pick.selected_option,
+          points: calculatePointsPerPrediction(group.length, pick.is_locked),
+          locked: pick.is_locked,
+        });
+      }
+    }
+    picksByEvent.set(eventId, eventPicks);
   }
 
   return (
@@ -62,6 +89,22 @@ export default async function PicksPage() {
       <p className="text-sm text-gray-300">
         Saved picks are shown below. A dash means no pick has been saved. Use the slider to see all users.
       </p>
+      <p className="text-sm text-gray-300">
+        Points shown are potential points if the pick is correct, including locks, rounded to whole
+        points. The leaderboard uses two decimal places. Values can change as picks change.
+      </p>
+      {events.length > 0 && users.length > 0 && (
+        <div className="space-y-2 text-sm text-gray-200">
+          <p>Pick value colour key (rounded points if correct):</p>
+          <ul className="flex flex-wrap gap-2">
+            {pointBands.map((band) => (
+              <li key={band.label} className={`${band.className} rounded border border-gray-700 px-2 py-1`}>
+                {band.label} points
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {events.length === 0 ? (
         <p className="text-gray-400">No events are available yet.</p>
       ) : users.length === 0 ? (
@@ -93,9 +136,22 @@ export default async function PicksPage() {
                     </th>
                     {users.map((participant) => {
                       const pick = picksByEvent.get(event.id)?.get(participant.id);
+                      const roundedPoints = pick ? Math.round(pick.points) : null;
+                      const band = roundedPoints === null
+                        ? null
+                        : pointBands.find((item) => roundedPoints <= item.max);
                       return (
-                        <td key={participant.id} className="px-4 py-3 text-gray-300">
-                          {pick ?? <span aria-label="No saved pick">&mdash;</span>}
+                        <td key={participant.id} className={`px-4 py-3 text-gray-300 ${band?.className ?? ""}`}>
+                          {pick ? (
+                            <>
+                              <span>{pick.option}</span>
+                              <span className="block text-xs text-gray-400">
+                                {roundedPoints} points if correct{pick.locked ? " (locked)" : ""}
+                              </span>
+                            </>
+                          ) : (
+                            <span aria-label="No saved pick">&mdash;</span>
+                          )}
                         </td>
                       );
                     })}

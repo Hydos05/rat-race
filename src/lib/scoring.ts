@@ -5,6 +5,14 @@ export interface ScoredPrediction {
   points: number;
 }
 
+export function normaliseAnswer(answer: string): string {
+  return answer.trim().toLowerCase();
+}
+
+export function calculatePointsPerPrediction(sharingCount: number, isLocked: boolean): number {
+  return Math.round((POINTS_PER_EVENT / sharingCount) * (isLocked ? LOCK_MULTIPLIER : 1) * 100) / 100;
+}
+
 /**
  * Distributes `POINTS_PER_EVENT` equally among every prediction that
  * matches the correct answer for an event. E.g. 1 correct pick gets all
@@ -22,17 +30,13 @@ export function calculateEventPoints(
 
   const winners = predictions.filter(
     (prediction) =>
-      prediction.selected_option.trim().toLowerCase() ===
-      correctAnswer.trim().toLowerCase(),
+      normaliseAnswer(prediction.selected_option) === normaliseAnswer(correctAnswer),
   );
 
   if (winners.length === 0) return [];
 
-  const pointsEach = POINTS_PER_EVENT / winners.length;
-
   return winners.map((winner) => ({
     user_id: winner.user_id,
-    points:
-      Math.round(pointsEach * (winner.is_locked ? LOCK_MULTIPLIER : 1) * 100) / 100,
+    points: calculatePointsPerPrediction(winners.length, winner.is_locked === true),
   }));
 }
