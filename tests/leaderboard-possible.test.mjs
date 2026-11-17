@@ -145,5 +145,5 @@ test("renders actual and possible points together", () => {
     entries: [{ user_id: "u1", total_points: 30, possible_points: 196.67, full_name: "Player" }],
   }));
   assert.match(html, /Points \/ possible/);
-  assert.match(html, /30 \/ 196\.67/);
+  assert.match(html, /30 \/ <span class="text-gray-400 italic font-normal">196\.67<\/span>/);
 });
