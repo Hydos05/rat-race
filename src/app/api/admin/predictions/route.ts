@@ -53,6 +53,7 @@ export async function POST(request: Request) {
     {
       userId: string;
       name: string;
+      email: string;
       feesPaid: boolean;
       lockCount: number;
       predictions: {
@@ -68,6 +69,7 @@ export async function POST(request: Request) {
     byUser.set(user.id, {
       userId: user.id,
       name: user.full_name || user.email || "Anonymous",
+      email: user.email,
       feesPaid: feesByUser.get(user.id) === true,
       lockCount: 0,
       predictions: [],

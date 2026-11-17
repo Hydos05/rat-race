@@ -4,11 +4,13 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { LOCK_MULTIPLIER } from "@/lib/constants";
+import ResetUserPassword from "./ResetUserPassword";
 import type { RatRaceEvent } from "@/types/database";
 
 interface AdminUserPredictions {
   userId: string;
   name: string;
+  email: string;
   feesPaid: boolean;
   lockCount: number;
   predictions: {
@@ -326,6 +328,12 @@ export default function AdminPage() {
                       </li>
                     ))}
                   </ul>
+                  <ResetUserPassword
+                    adminKey={adminKey}
+                    userId={entry.userId}
+                    name={entry.name}
+                    email={entry.email}
+                  />
                 </details>
               </div>
             ))

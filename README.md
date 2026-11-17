@@ -78,6 +78,10 @@ Visit `/admin` and enter the `ADMIN_KEY` you configured. From there you can:
   Select the plus box beside a player to expand their picks, or the minus box to collapse them.
 - Tick **Fees paid** beside a user to record payment, or untick it to correct a mistake.
   Payment status is saved across refreshes and is accessible only through the admin API.
+- Expand a user under **View predictions** and select **Reset password** to set a temporary
+  password without email. Check the displayed email, share the password securely, and ask the
+  participant to sign in and change it at `/reset-password`. This does not force a password
+  change or guarantee that existing sessions are immediately signed out.
 - Follow the **Edit event options** link to `/admin/edit-events`, where you can edit each event's
   dropdown options (one option per line, add/remove/reorder freely), or restore an event's
   original options with **Reset to defaults**. Changes are saved immediately via
