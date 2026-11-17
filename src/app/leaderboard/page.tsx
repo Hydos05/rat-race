@@ -23,8 +23,8 @@ export default async function LeaderboardPage() {
         <>
           <p className="text-sm text-gray-300">
             Points / possible shows points earned plus potential points from events without a result.
-            Possible points include locks and can change as picks change. Refresh the page to
-            see the latest totals.
+            Possible points include locks and are rounded for display; rankings use unrounded totals.
+            Refresh the page to see the latest totals.
           </p>
           <LeaderboardTable entries={entries} />
         </>

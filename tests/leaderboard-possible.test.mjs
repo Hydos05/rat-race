@@ -138,12 +138,16 @@ test("leaderboard API sends current totals without prediction details and disabl
   assert.doesNotMatch(JSON.stringify(entries), /selected_option|Eagles/);
 });
 
-test("renders actual and possible points together", () => {
+test("renders actual points and rounds possible points for display", () => {
   const Table = load("src/app/leaderboard/LeaderboardTable.tsx").default;
   const React = requireDependency("react");
   const html = renderToStaticMarkup(React.createElement(Table, {
-    entries: [{ user_id: "u1", total_points: 30, possible_points: 196.67, full_name: "Player" }],
+    entries: [
+      { user_id: "u1", total_points: 30.25, possible_points: 196.67, full_name: "Player" },
+      { user_id: "u2", total_points: 0, possible_points: 196.49, full_name: "Another" },
+    ],
   }));
   assert.match(html, /Points \/ possible/);
-  assert.match(html, /30 \/ <span class="text-gray-400 italic font-normal">196\.67<\/span>/);
+  assert.match(html, /30\.25 \/ <span class="text-gray-400 italic font-normal">197<\/span>/);
+  assert.match(html, /0 \/ <span class="text-gray-400 italic font-normal">196<\/span>/);
 });

@@ -138,7 +138,7 @@ test("shows rounded potential points by event and pick, with locks doubled", asy
   assert.match(cells[6], /background-color:hsl\(240 85% 85%\).*100 points if correct/);
   assert.doesNotMatch(cells[7], /background-color/);
   assert.match(html, /Pick value colour key/);
-  assert.match(html, /leaderboard uses two decimal places/);
+  assert.match(html, /Actual leaderboard scores use two decimal places/);
 });
 
 test("colours rounded values including locked picks above 100", async () => {

@@ -83,7 +83,7 @@ export default async function PicksPage() {
       </p>
       <p className="text-sm text-gray-300">
         Points shown are potential points if the pick is correct, including locks, rounded to whole
-        points. The leaderboard uses two decimal places. Values can change as picks change.
+        points. Actual leaderboard scores use two decimal places. Values can change as picks change.
       </p>
       {events.length > 0 && users.length > 0 && (
         <div className="space-y-2 text-sm text-gray-200">

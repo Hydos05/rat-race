@@ -28,7 +28,7 @@ export default function LeaderboardTable({
               </td>
               <td className="px-4 py-3 text-right font-semibold text-cyan-400 whitespace-nowrap">
                 {Math.round(entry.total_points * 100) / 100} /{" "}
-                <span className="text-gray-400 italic font-normal">{entry.possible_points}</span>
+                <span className="text-gray-400 italic font-normal">{Math.round(entry.possible_points)}</span>
               </td>
             </tr>
           ))}
