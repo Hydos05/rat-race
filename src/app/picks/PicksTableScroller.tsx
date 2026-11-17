@@ -28,7 +28,7 @@ export default function PicksTableScroller({ children }: { children: ReactNode }
     <div>
       <div
         ref={scrollRef}
-        className="overflow-x-auto rounded-lg border border-gray-800"
+        className="max-h-[75vh] overflow-auto rounded-lg border border-gray-800"
         role="region"
         aria-label="Everyone's picks"
         tabIndex={0}

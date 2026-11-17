@@ -18,6 +18,8 @@ saved prediction.
 Signed-in participants can see everyone's saved picks, grouped by event category, on the
 **Everyone's picks** page. Picks are visible while submissions remain open.
 Use the slider at the bottom of the screen to scroll across the picks table.
+Scroll vertically within the table to see more events; the player-name header stays visible,
+and event names stay visible when scrolling horizontally.
 Each saved pick shows its potential points if correct, including locks, rounded to whole points;
 actual leaderboard scores use two decimal places. Potential values change when participants change picks.
 Cell colours indicate the rounded potential value in ten-point bands; the colour key appears above the table.
