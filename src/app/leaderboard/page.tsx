@@ -2,6 +2,8 @@ import { createClient } from "@supabase/supabase-js";
 import LeaderboardTable from "@/app/leaderboard/LeaderboardTable";
 import type { LeaderboardEntry } from "@/types/database";
 
+export const dynamic = "force-dynamic";
+
 interface LeaderboardRow {
   user_id: string;
   total_points: number;

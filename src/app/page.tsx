@@ -25,7 +25,7 @@ export default async function HomePage() {
           Predictions can be changed while submissions are open and the event is unlocked.
         </p>
         {!isLoggedIn && (
-          <div className="flex items-center justify-center gap-3">
+          <div className="flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/signup"
               className="bg-cyan-500 text-black px-5 py-2.5 rounded-md font-medium hover:bg-cyan-400"
@@ -51,6 +51,12 @@ export default async function HomePage() {
                 className="bg-cyan-500 text-black px-5 py-2.5 rounded-md font-medium hover:bg-cyan-400"
               >
                 Make your picks
+              </Link>
+              <Link
+                href="/picks"
+                className="border border-gray-700 px-5 py-2.5 rounded-md font-medium text-gray-100 hover:bg-gray-800"
+              >
+                Everyone&apos;s picks
               </Link>
               <Link
                 href="/leaderboard"
