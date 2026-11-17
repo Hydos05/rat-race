@@ -1,69 +1,22 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import type { LeaderboardEntry } from "@/types/database";
 
 export default function LeaderboardTable({
-  initialEntries,
+  entries,
 }: {
-  initialEntries: LeaderboardEntry[];
+  entries: LeaderboardEntry[];
 }) {
-  const [entries, setEntries] = useState<LeaderboardEntry[]>(initialEntries);
-
-  useEffect(() => {
-    const supabase = createClient();
-
-    const channel = supabase
-      .channel("leaderboard-changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "leaderboard" },
-        async () => {
-          const { data } = await supabase
-            .from("leaderboard")
-            .select("user_id, total_points, updated_at, users ( full_name, email )")
-            .order("total_points", { ascending: false });
-
-          if (data) {
-            setEntries(
-              (
-                data as unknown as {
-                  user_id: string;
-                  total_points: number;
-                  updated_at: string;
-                  users: { full_name: string | null; email: string } | null;
-                }[]
-              ).map((row) => ({
-                user_id: row.user_id,
-                total_points: row.total_points,
-                updated_at: row.updated_at,
-                full_name: row.users?.full_name ?? null,
-                email: row.users?.email,
-              })),
-            );
-          }
-        },
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
-
   if (entries.length === 0) {
     return <p className="text-sm text-gray-400">No scores yet. Check back once results roll in!</p>;
   }
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
+    <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-x-auto">
       <table className="w-full text-sm">
         <thead className="bg-gray-800 text-left text-gray-400 uppercase text-xs">
           <tr>
             <th className="px-4 py-3">Rank</th>
             <th className="px-4 py-3">Name</th>
-            <th className="px-4 py-3 text-right">Points</th>
+            <th className="px-4 py-3 text-right">Points / possible</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-800">
@@ -73,8 +26,8 @@ export default function LeaderboardTable({
               <td className="px-4 py-3 text-gray-300">
                 {entry.full_name || entry.email || "Anonymous"}
               </td>
-              <td className="px-4 py-3 text-right font-semibold text-cyan-400">
-                {Math.round(entry.total_points * 100) / 100}
+              <td className="px-4 py-3 text-right font-semibold text-cyan-400 whitespace-nowrap">
+                {Math.round(entry.total_points * 100) / 100} / {entry.possible_points}
               </td>
             </tr>
           ))}

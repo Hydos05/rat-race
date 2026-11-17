@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
 import { createClient } from "@/lib/supabase/server";
-import { calculatePointsPerPrediction, normaliseAnswer } from "@/lib/scoring";
+import { calculatePointsPerPrediction, groupPredictionsByEventAndAnswer } from "@/lib/scoring";
 import PicksTableScroller from "./PicksTableScroller";
 
 type Event = { id: string; name: string; category: string };
@@ -59,15 +59,7 @@ export default async function PicksPage() {
     group.push(event);
     categories.set(event.category, group);
   }
-  const groupedPicks = new Map<string, Map<string, Pick[]>>();
-  for (const pick of picks) {
-    const eventPicks = groupedPicks.get(pick.event_id) ?? new Map<string, Pick[]>();
-    const answer = normaliseAnswer(pick.selected_option);
-    const matchingPicks = eventPicks.get(answer) ?? [];
-    matchingPicks.push(pick);
-    eventPicks.set(answer, matchingPicks);
-    groupedPicks.set(pick.event_id, eventPicks);
-  }
+  const groupedPicks = groupPredictionsByEventAndAnswer(picks);
   const picksByEvent = new Map<string, Map<string, { option: string; points: number; locked: boolean }>>();
   for (const [eventId, groups] of groupedPicks) {
     const eventPicks = new Map<string, { option: string; points: number; locked: boolean }>();

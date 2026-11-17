@@ -49,7 +49,8 @@ export interface Prediction {
 export interface LeaderboardEntry {
   user_id: string;
   total_points: number;
-  updated_at: string;
+  possible_points: number;
+  updated_at: string | null;
   full_name?: string | null;
   email?: string;
 }

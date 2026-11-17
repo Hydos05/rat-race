@@ -1,6 +1,51 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
-import { calculateEventPoints } from "@/lib/scoring";
+import { calculateEventPoints, calculateRemainingPoints } from "@/lib/scoring";
+import type { LeaderboardEntry } from "@/types/database";
+
+interface LeaderboardRow {
+  user_id: string;
+  total_points: number;
+  updated_at: string;
+}
+
+export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
+  const supabase = createAdminClient();
+  const [rows, users, events, predictions] = await Promise.all([
+    fetchAllRows<LeaderboardRow>((from, to) =>
+      supabase.from("leaderboard")
+        .select("user_id, total_points, updated_at").order("user_id").range(from, to),
+    ),
+    fetchAllRows<{ id: string; full_name: string | null; email: string }>((from, to) =>
+      supabase.from("users").select("id, full_name, email").order("id").range(from, to),
+    ),
+    fetchAllRows<{ id: string; correct_answer: string | null }>((from, to) =>
+      supabase.from("events").select("id, correct_answer").order("id").range(from, to),
+    ),
+    fetchAllRows<{ user_id: string; event_id: string; selected_option: string; is_locked: boolean }>((from, to) =>
+      supabase.from("predictions").select("user_id, event_id, selected_option, is_locked")
+        .order("id").range(from, to),
+    ),
+  ]);
+  const remaining = calculateRemainingPoints(events, predictions);
+  const scores = new Map(rows.map((row) => [row.user_id, row]));
+  return users.map((user) => {
+    const score = scores.get(user.id);
+    const actual = score?.total_points ?? 0;
+    return {
+      user_id: user.id,
+      total_points: actual,
+      possible_points: Math.round((actual + (remaining.get(user.id) ?? 0)) * 100) / 100,
+      updated_at: score?.updated_at ?? null,
+      full_name: user.full_name,
+      email: user.email,
+    };
+  }).sort((a, b) =>
+    b.total_points - a.total_points ||
+    b.possible_points - a.possible_points ||
+    a.user_id.localeCompare(b.user_id),
+  );
+}
 
 /**
  * Recomputes the entire leaderboard from scratch based on every event that

@@ -16,6 +16,9 @@ Use the slider at the bottom of the screen to scroll across the picks table.
 Each saved pick shows its potential points if correct, including locks, rounded to whole points;
 the leaderboard uses two decimal places. Potential values change when participants change picks.
 Cell colours indicate the rounded potential value in ten-point bands; the colour key appears above the table.
+The leaderboard displays actual points / total possible points. Total possible is actual points
+plus the potential value of saved picks for events without a result, including locks. Reload the
+page for current values. Rankings are sorted by actual points, then total possible points.
 
 ## Tech stack
 
