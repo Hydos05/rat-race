@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAllRows } from "@/lib/supabase/fetchAllRows";
 import { createClient } from "@/lib/supabase/server";
+import PicksTableScroller from "./PicksTableScroller";
 
 type Event = { id: string; name: string; category: string };
 type User = { id: string; full_name: string | null };
@@ -59,14 +60,14 @@ export default async function PicksPage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold text-gray-100">Everyone&apos;s picks</h1>
       <p className="text-sm text-gray-300">
-        Saved picks are shown below. A dash means no pick has been saved. Scroll sideways to see all users.
+        Saved picks are shown below. A dash means no pick has been saved. Use the slider to see all users.
       </p>
       {events.length === 0 ? (
         <p className="text-gray-400">No events are available yet.</p>
       ) : users.length === 0 ? (
         <p className="text-gray-400">No participants are available yet.</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-gray-800" role="region" aria-label="Everyone's picks" tabIndex={0}>
+        <PicksTableScroller>
           <table className="w-full text-sm text-left border-collapse">
             <thead>
               <tr className="bg-gray-800">
@@ -103,7 +104,7 @@ export default async function PicksPage() {
               </tbody>
             ))}
           </table>
-        </div>
+        </PicksTableScroller>
       )}
     </div>
   );

@@ -12,6 +12,7 @@ Super Bowl winner, NFL MVP, Offensive Player of the Year, Defensive Player of th
 College Football Playoff Champion and Heisman Trophy. Predictions for these events are still allowed.
 Signed-in participants can see everyone's saved picks, grouped by event category, on the
 **Everyone's picks** page. Picks are visible while submissions remain open.
+Use the slider at the bottom of the screen to scroll across the picks table.
 
 ## Tech stack
 

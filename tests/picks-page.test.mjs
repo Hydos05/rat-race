@@ -66,6 +66,7 @@ function makePage({ signedIn = true, failTable, cap = 500 } = {}) {
     },
     "@/lib/supabase/admin": { createAdminClient: () => { adminCalls++; return admin; } },
     "@/lib/supabase/fetchAllRows": { fetchAllRows },
+    "./PicksTableScroller": { default: ({ children }) => children },
   }).default;
   return { page, selections, getAdminCalls: () => adminCalls };
 }
