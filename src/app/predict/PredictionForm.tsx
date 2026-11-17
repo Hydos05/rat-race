@@ -455,7 +455,7 @@ export default function PredictionForm({
         </p>
         <p className="text-xs text-gray-400">
           After submissions close, use a wildcard to change a saved selection before its event starts.
-          Each change uses one wildcard. No refunds. Existing Locks remain unchanged.
+          Each change uses one wildcard. No refunds. Locked picks cannot be changed.
         </p>
       </div>
 
@@ -536,7 +536,8 @@ export default function PredictionForm({
                     id={`event-${event.id}`}
                     value={answers[event.id] ?? ""}
                     disabled={saving || event.locked || (!submissionsOpen && (
-                      !savedEventIds.has(event.id) || !event.starts_at || !!event.correct_answer || wildcardsRemaining <= 0
+                      !savedEventIds.has(event.id) || !event.wildcards_allowed || !!event.correct_answer ||
+                      !!locks[event.id] || wildcardsRemaining <= 0
                     ))}
                     onChange={(e) => handleSelect(event.id, e.target.value)}
                     className="w-full rounded-md border border-gray-700 bg-gray-800 text-gray-100 px-3 py-2 disabled:bg-gray-900 disabled:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-400"
@@ -579,7 +580,8 @@ export default function PredictionForm({
                       placeholder="Your answer"
                       value={otherText[event.id] ?? ""}
                       disabled={saving || event.locked || (!submissionsOpen && (
-                        !savedEventIds.has(event.id) || !event.starts_at || !!event.correct_answer || wildcardsRemaining <= 0
+                        !savedEventIds.has(event.id) || !event.wildcards_allowed || !!event.correct_answer ||
+                        !!locks[event.id] || wildcardsRemaining <= 0
                       ))}
                       onChange={(e) => handleOtherText(event.id, e.target.value)}
                       className="w-full rounded-md border border-gray-700 bg-gray-800 text-gray-100 px-3 py-2 disabled:bg-gray-900 disabled:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-400"
@@ -588,14 +590,17 @@ export default function PredictionForm({
                   {!submissionsOpen && savedEventIds.has(event.id) && (
                     <>
                       <p className="text-xs text-gray-400">
-                        {event.starts_at
-                          ? `Wildcard cutoff: ${new Date(event.starts_at).toISOString().replace("T", " ").slice(0, 16)} UTC`
-                          : "Wildcard unavailable until the event start time is set."}
+                        {locks[event.id]
+                          ? "Locked picks cannot be changed with a wildcard."
+                          : event.wildcards_allowed && !event.locked && !event.correct_answer
+                            ? "Wildcards allowed for this event."
+                            : "Wildcards unavailable for this event."}
                       </p>
                       <button
                         type="button"
                         onClick={() => handleWildcard(event)}
-                        disabled={saving || event.locked || !!event.correct_answer || !event.starts_at || wildcardsRemaining <= 0}
+                        disabled={saving || event.locked || !!event.correct_answer || !event.wildcards_allowed ||
+                          !!locks[event.id] || wildcardsRemaining <= 0}
                         className="rounded border border-cyan-500 px-3 py-2 text-sm text-cyan-300 hover:bg-gray-800 disabled:opacity-50"
                       >
                         Use wildcard

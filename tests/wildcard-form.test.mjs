@@ -26,9 +26,9 @@ vm.runInNewContext(compiled, {
 const Form = compiledModule.exports.default;
 const event = {
   id: "event", name: "Final", category: "AFL", options: ["A", "B"],
-  locked: false, lock_eligible: true, starts_at: "2030-01-01T10:00:00Z",
+  locked: false, lock_eligible: true, wildcards_allowed: true,
 };
-const prediction = { event_id: "event", selected_option: "A", is_locked: true };
+const prediction = { event_id: "event", selected_option: "A", is_locked: false };
 
 function render(props = {}) {
   return renderToStaticMarkup(React.createElement(Form, {
@@ -37,19 +37,23 @@ function render(props = {}) {
   }));
 }
 
-test("closed submissions show a wildcard action and preserve the lock", () => {
+test("closed submissions show a wildcard action for an unlocked pick", () => {
   const html = render();
   assert.match(html, /Wildcards remaining: 2 \/ 2/);
-  assert.match(html, /Wildcard cutoff: 2030-01-01 10:00 UTC/);
+  assert.match(html, /Wildcards allowed for this event/);
   assert.match(html, /Use wildcard/);
-  assert.match(html, /Existing Locks remain unchanged/);
+  assert.match(html, /Locked picks cannot be changed/);
   assert.doesNotMatch(html, /Save predictions/);
 });
 
-test("wildcards are unavailable without a cutoff, a saved pick, or a balance", () => {
-  const noCutoff = render({ events: [{ ...event, starts_at: null }] });
-  assert.match(noCutoff, /unavailable until the event start time is set/);
-  assert.match(noCutoff, /disabled=""[^>]*>Use wildcard/);
+test("wildcards are unavailable for locked picks, disabled events, unsaved picks or an empty balance", () => {
+  const noWildcard = render({ events: [{ ...event, wildcards_allowed: false }] });
+  assert.match(noWildcard, /Wildcards unavailable for this event/);
+  assert.match(noWildcard, /disabled=""[^>]*>Use wildcard/);
+  const locked = render({ existingPredictions: [{ ...prediction, is_locked: true }] });
+  assert.match(locked, /Locked picks cannot be changed with a wildcard/);
+  assert.match(locked, /disabled=""[^>]*>Use wildcard/);
+  assert.match(locked, /<select[^>]*disabled=""/);
   const noPick = render({ existingPredictions: [] });
   assert.doesNotMatch(noPick, /Use wildcard/);
   const exhausted = render({ wildcardUses: 2 });

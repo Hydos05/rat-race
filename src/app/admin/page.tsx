@@ -36,7 +36,7 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [answerDrafts, setAnswerDrafts] = useState<Record<string, string>>({});
-  const [startDrafts, setStartDrafts] = useState<Record<string, string>>({});
+  const [savingWildcards, setSavingWildcards] = useState<Set<string>>(new Set());
   const [userPredictions, setUserPredictions] = useState<AdminUserPredictions[] | null>(
     null,
   );
@@ -106,25 +106,27 @@ export default function AdminPage() {
     }
   }
 
-  async function handleSaveStart(event: RatRaceEvent) {
-    const value = startDrafts[event.id] ?? (event.starts_at ? new Date(event.starts_at).toISOString().slice(0, 16) : "");
-    const date = value ? new Date(`${value}:00Z`) : null;
-    if (date && Number.isNaN(date.getTime())) {
-      setError("Enter a valid UTC start time.");
-      return;
-    }
+  async function handleToggleWildcards(event: RatRaceEvent) {
+    setSavingWildcards((previous) => new Set(previous).add(event.id));
     try {
-      const success = await callAdminApi("event-start", {
+      const success = await callAdminApi("wildcards", {
         eventId: event.id,
-        startsAt: date?.toISOString() ?? null,
+        wildcardsAllowed: !event.wildcards_allowed,
       });
       if (success) {
-        setMessage(`Start time saved for ${event.name}.`);
-        setLoading(true);
-        loadEvents();
+        setEvents((previous) => previous.map((item) =>
+          item.id === event.id ? { ...item, wildcards_allowed: !event.wildcards_allowed } : item,
+        ));
+        setMessage(`Wildcards ${event.wildcards_allowed ? "disallowed" : "allowed"} for ${event.name}.`);
       }
     } catch {
-      setError("Could not save start time. Please try again.");
+      setError("Could not update wildcard availability. Please try again.");
+    } finally {
+      setSavingWildcards((previous) => {
+        const next = new Set(previous);
+        next.delete(event.id);
+        return next;
+      });
     }
   }
 
@@ -368,6 +370,10 @@ export default function AdminPage() {
         <p className="text-sm text-gray-400">Loading events&hellip;</p>
       ) : (
         <div className="space-y-3">
+          <p className="text-sm text-gray-300">
+            Enable wildcards only for events that have not started. Disable them when an event starts;
+            this is not automatic. Locked or scored events remain ineligible.
+          </p>
           {events.map((event) => (
             <div
               key={event.id}
@@ -382,22 +388,17 @@ export default function AdminPage() {
                     : "No answer recorded"}
                 </p>
               </div>
-              <div className="flex flex-col gap-1">
-                <label htmlFor={`start-${event.id}`} className="text-xs text-gray-300">
-                  Event start (UTC)
-                </label>
+              <label className="flex items-center gap-2 text-sm text-gray-200">
                 <input
-                  id={`start-${event.id}`}
-                  type="datetime-local"
-                  value={startDrafts[event.id] ?? (event.starts_at ? new Date(event.starts_at).toISOString().slice(0, 16) : "")}
-                  onChange={(e) => setStartDrafts((prev) => ({ ...prev, [event.id]: e.target.value }))}
-                  className="rounded-md border border-gray-700 bg-gray-800 text-gray-100 px-3 py-2 text-sm"
+                  type="checkbox"
+                  checked={event.wildcards_allowed}
+                  disabled={savingWildcards.has(event.id)}
+                  onChange={() => handleToggleWildcards(event)}
+                  aria-label={`Allow wildcards for ${event.name}`}
+                  className="h-4 w-4 accent-cyan-400 disabled:opacity-50"
                 />
-                <button type="button" onClick={() => handleSaveStart(event)}
-                  className="border border-gray-700 px-3 py-2 rounded-md text-sm text-gray-100 hover:bg-gray-800">
-                  Save start time
-                </button>
-              </div>
+                Allow wildcards
+              </label>
               <input
                 type="text"
                 placeholder="Correct answer"

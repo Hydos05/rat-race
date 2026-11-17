@@ -25,19 +25,22 @@ grant select, update on public.predictions to authenticated;
 create policy own_picks on public.predictions for select to authenticated using (user_id = auth.uid());
 \ir ../migrations/0005_submission_settings.sql
 \ir ../migrations/0009_wildcards.sql
+\ir ../migrations/0010_manual_wildcards.sql
 
 insert into public.users values
   ('00000000-0000-0000-0000-000000000001'),
   ('00000000-0000-0000-0000-000000000002');
-insert into public.events (id, starts_at, locked, correct_answer) values
-  ('10000000-0000-0000-0000-000000000001', now() + interval '1 day', false, null),
-  ('10000000-0000-0000-0000-000000000002', null, false, null),
-  ('10000000-0000-0000-0000-000000000003', now() - interval '1 second', false, null),
-  ('10000000-0000-0000-0000-000000000004', now() + interval '1 day', true, null),
-  ('10000000-0000-0000-0000-000000000005', now() + interval '1 day', false, 'winner'),
-  ('10000000-0000-0000-0000-000000000006', now() + interval '1 day', false, null);
+insert into public.events (id, wildcards_allowed, locked, correct_answer) values
+  ('10000000-0000-0000-0000-000000000001', true, false, null),
+  ('10000000-0000-0000-0000-000000000002', false, false, null),
+  ('10000000-0000-0000-0000-000000000003', true, false, null),
+  ('10000000-0000-0000-0000-000000000004', true, true, null),
+  ('10000000-0000-0000-0000-000000000005', true, false, 'winner'),
+  ('10000000-0000-0000-0000-000000000006', true, false, null);
+insert into public.events (id) values ('10000000-0000-0000-0000-000000000007');
 insert into public.predictions (user_id, event_id, selected_option, is_locked)
-select '00000000-0000-0000-0000-000000000001', id, 'Original', true
+select '00000000-0000-0000-0000-000000000001', id, 'Original',
+  id = '10000000-0000-0000-0000-000000000003'
 from public.events where id <> '10000000-0000-0000-0000-000000000006';
 insert into public.predictions values
   ('00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', 'Other player', false, now());
@@ -59,12 +62,20 @@ select set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-000000000001
 select pg_temp.expect_error($q$select public.use_wildcard('10000000-0000-0000-0000-000000000001', 'Original', 'New')$q$, 'only available after submissions close');
 reset role;
 update public.competition_settings set submissions_open = false;
+update public.events set wildcards_allowed = false
+where id = '10000000-0000-0000-0000-000000000001';
+set local role authenticated;
+select pg_temp.expect_error($q$select public.use_wildcard('10000000-0000-0000-0000-000000000001', 'Original', 'New')$q$, 'not eligible');
+reset role;
+update public.events set wildcards_allowed = true
+where id = '10000000-0000-0000-0000-000000000001';
 set local role authenticated;
 select pg_temp.expect_error($q$select public.use_wildcard('10000000-0000-0000-0000-000000000002', 'Original', 'New')$q$, 'not eligible');
-select pg_temp.expect_error($q$select public.use_wildcard('10000000-0000-0000-0000-000000000003', 'Original', 'New')$q$, 'not eligible');
+select pg_temp.expect_error($q$select public.use_wildcard('10000000-0000-0000-0000-000000000003', 'Original', 'New')$q$, 'locked pick');
 select pg_temp.expect_error($q$select public.use_wildcard('10000000-0000-0000-0000-000000000004', 'Original', 'New')$q$, 'not eligible');
 select pg_temp.expect_error($q$select public.use_wildcard('10000000-0000-0000-0000-000000000005', 'Original', 'New')$q$, 'not eligible');
 select pg_temp.expect_error($q$select public.use_wildcard('10000000-0000-0000-0000-000000000006', 'Original', 'New')$q$, 'saved prediction');
+select pg_temp.expect_error($q$select public.use_wildcard('10000000-0000-0000-0000-000000000007', 'Original', 'New')$q$, 'not eligible');
 select pg_temp.expect_error($q$select public.use_wildcard('10000000-0000-0000-0000-000000000001', 'stale', 'New')$q$, 'changed');
 select pg_temp.expect_error($q$select public.use_wildcard('10000000-0000-0000-0000-000000000001', 'Original', ' original ')$q$, 'different selection');
 select pg_temp.expect_error($q$select public.use_wildcard('10000000-0000-0000-0000-000000000001', 'Original', '  ')$q$, 'Choose a new selection');
@@ -72,7 +83,8 @@ select pg_temp.expect_error($q$select public.use_wildcard('10000000-0000-0000-00
 do $$
 begin
   if public.use_wildcard('10000000-0000-0000-0000-000000000001', 'Original', 'New') <> 1 then raise exception 'Wrong balance'; end if;
-  if not exists (select 1 from public.predictions where selected_option = 'New' and is_locked) then raise exception 'Pick or lock not preserved'; end if;
+  if not exists (select 1 from public.predictions where selected_option = 'New' and not is_locked) then raise exception 'Pick not saved'; end if;
+  if not exists (select 1 from public.predictions where event_id = '10000000-0000-0000-0000-000000000003' and selected_option = 'Original' and is_locked) then raise exception 'Locked pick was changed'; end if;
   if public.use_wildcard('10000000-0000-0000-0000-000000000001', 'New', 'Again') <> 0 then raise exception 'Wrong balance'; end if;
 end;
 $$;
