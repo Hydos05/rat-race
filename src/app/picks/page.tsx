@@ -79,7 +79,8 @@ export default async function PicksPage() {
     <div className="space-y-4">
       <h1 className="text-2xl font-bold text-gray-100">Everyone&apos;s picks</h1>
       <p className="text-sm text-gray-300">
-        Saved picks are shown below. A dash means no pick has been saved. Use the slider to see all users.
+        Saved picks are shown below. A dash means no pick has been saved. Scroll within the table
+        to see more events; player names stay visible. Use the slider to see all users.
       </p>
       <p className="text-sm text-gray-300">
         Points shown are potential points if the pick is correct, including locks, rounded to whole
@@ -104,7 +105,7 @@ export default async function PicksPage() {
       ) : (
         <PicksTableScroller>
           <table className="w-full text-sm text-left border-collapse">
-            <thead>
+            <thead className="sticky top-0 z-20 bg-gray-800">
               <tr className="bg-gray-800">
                 <th scope="col" className="sticky left-0 z-10 bg-gray-800 min-w-48 px-4 py-3">Event</th>
                 {users.map((participant) => (

@@ -75,6 +75,14 @@ test("keeps the sticky slider and table scroll position in sync in both directio
   assert.equal(slider().props.value, 250);
 });
 
+test("provides a bounded vertical scroll region for the persistent table header", () => {
+  const { render, find } = setup();
+  const region = find(render(), (node) => node.props.role === "region");
+  assert.match(region.props.className, /max-h-\[75vh\]/);
+  assert.match(region.props.className, /overflow-auto/);
+  assert.equal(region.props.tabIndex, 0);
+});
+
 test("updates the range on resize and hides it when the table fits", () => {
   const { element, render, find, observer, cleanup } = setup();
   assert.equal(observer.observed.length, 2);

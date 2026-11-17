@@ -94,6 +94,8 @@ test("renders all paginated picks in grouped event rows and sorted user columns"
   assert.match(html, /Pick e1000/);
   assert.match(html, /aria-label="No saved pick"/);
   assert.ok(selections.every(([, columns]) => !columns.includes("email")));
+  assert.match(html, /<thead class="sticky top-0 z-20 bg-gray-800">/);
+  assert.match(html, /<th scope="col" class="sticky left-0 z-10 bg-gray-800/);
 });
 
 test("shows rounded potential points by event and pick, with locks doubled", async () => {
